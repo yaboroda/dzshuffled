@@ -1,0 +1,31 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+import configparser
+import os
+
+scriptVersion = '0.0.0.0'
+
+configPath = './config.ini'
+
+class Config(object):
+
+    cfg = {}
+    path = ''
+
+    def __init__(self, path):
+        self.path = path
+
+        # if not os.path.isfile(path):
+        self.createConfigFile(path)
+
+    def createConfigFile(self, path):
+        newConfig = configparser.ConfigParser()
+
+        newConfig['app'] = {'app_id': '', 'secret': ''}
+        newConfig['auth'] = {'token': ''}
+
+        with open(path, 'w') as configfile:
+            newConfig.write(configfile)
+
+config = Config(configPath)
