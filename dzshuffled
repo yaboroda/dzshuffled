@@ -66,18 +66,28 @@ class DeezerAuth(object):
         self.secret = secret
         self.appId = appId
 
-    def getCode(self):
+    def fetchCode(self):
         redirect = self.urlRedirect.format(self.port)
         webbrowser.open(self.urlAuth.format(self.appId, redirect))
-        self.startServer('localhost', self.port)
+        self.startServer()
         try:
             while True:
                 self.server.handle_request()
         except _Authorization as auth:
             self.code = auth.code
 
-    def startServer(self, host, port):
-        self.server = _AuthorizationServer(host, port)
+    def startServer(self):
+        self.server = _AuthorizationServer('localhost', self.port)
+
+    def fetchToken(self):
+        url = self.urlToken.format(self.appId, self.secret, self.code)
+        f = urllib.request.urlopen(url)
+        fstr = f.read().decode('utf-8')
+
+        if len(fstr.split('&')) != 2:
+            raise Exception('Cant get token from deezer')
+
+        self.token = fstr.split('&')[0].split('=')[1]
 
 class _AuthorizationServer(http.server.HTTPServer):
     def __init__(self, host, port):
@@ -117,5 +127,7 @@ if __name__ == '__main__':
         config.cfg['app']['secret'], 
         config.cfg['app']['app_id']
     )
-    auth.getCode()
+    auth.fetchCode()
     pp.pprint(auth.code)
+    auth.fetchToken()
+    pp.pprint(auth.token)
