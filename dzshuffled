@@ -34,8 +34,8 @@ class Config(object):
     def createConfigFile(self):
         newConfig = configparser.ConfigParser()
 
-        newConfig['app'] = {'app_id': '', 'secret': '', 'port': '8090'}
-        newConfig['auth'] = {'token': ''}
+        newConfig['auth'] = {'app_id': '', 'secret': '', 'port': '8090'}
+        newConfig['token'] = {'token': ''}
 
         with open(self.path, 'w') as configfile:
             newConfig.write(configfile)
@@ -55,16 +55,18 @@ class DeezerAuth(object):
     urlToken = 'https://connect.deezer.com/oauth/access_token.php?app_id={0}&secret={1}&code={2}'
     urlRedirect = 'http://localhost:{0}/authfinish'
 
-    port = ''
-    secret = ''
-    appId = ''
-    code = ''
-    token = ''
+    def getToken(self):
+        return self.token
     
-    def setParams(self, port, secret, appId):
-        self.port = int(port)
-        self.secret = secret
-        self.appId = appId
+    def setParams(self, params, token=''):
+        self.port = int(params['port'])
+        self.secret = params['secret']
+        self.appId = params['app_id']
+        self.token = token
+
+    def authorize(self):
+        self.fetchCode()
+        self.fetchToken()            
 
     def fetchCode(self):
         redirect = self.urlRedirect.format(self.port)
@@ -122,12 +124,6 @@ if __name__ == '__main__':
     config = Config(configPath)
 
     auth = DeezerAuth()
-    auth.setParams(
-        config.cfg['app']['port'], 
-        config.cfg['app']['secret'], 
-        config.cfg['app']['app_id']
-    )
-    auth.fetchCode()
-    pp.pprint(auth.code)
-    auth.fetchToken()
-    pp.pprint(auth.token)
+    auth.setParams(config.cfg['auth'])
+    auth.authorize()
+    pp.pprint(auth.getToken())
