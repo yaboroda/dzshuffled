@@ -74,8 +74,7 @@ class DeezerAuth(object):
             while True:
                 self.server.handle_request()
         except _Authorization as auth:
-            pp.pprint('code:')
-            pp.pprint(auth.access_token)
+            self.code = auth.code
 
     def startServer(self, host, port):
         self.server = _AuthorizationServer(host, port)
@@ -106,8 +105,8 @@ class _AuthorizationHandler(http.server.BaseHTTPRequestHandler):
         pass
 
 class _Authorization(Exception):
-    def __init__(self, access_token):
-        self.access_token = access_token
+    def __init__(self, code):
+        self.code = code
 
 if __name__ == '__main__':
     config = Config(configPath)
@@ -119,3 +118,4 @@ if __name__ == '__main__':
         config.cfg['app']['app_id']
     )
     auth.getCode()
+    pp.pprint(auth.code)
