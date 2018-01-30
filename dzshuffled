@@ -3,29 +3,44 @@
 
 import configparser
 import os
+import pprint
 
 scriptVersion = '0.0.0.0'
 
 configPath = './config.ini'
 
-class Config(object):
+pp = pprint.PrettyPrinter(indent=4)
 
+class Config(object):
     cfg = {}
     path = ''
 
     def __init__(self, path):
         self.path = path
 
-        # if not os.path.isfile(path):
-        self.createConfigFile(path)
+        if not os.path.isfile(path):
+            self.createConfigFile()
 
-    def createConfigFile(self, path):
+        self.readConfigFile()
+
+    def createConfigFile(self):
         newConfig = configparser.ConfigParser()
 
         newConfig['app'] = {'app_id': '', 'secret': ''}
         newConfig['auth'] = {'token': ''}
 
-        with open(path, 'w') as configfile:
+        with open(self.path, 'w') as configfile:
             newConfig.write(configfile)
 
+    def readConfigFile(self):
+        configObj = configparser.ConfigParser()
+        configObj.read(self.path)
+
+        self.cfg = {}
+        for section in configObj.sections():
+            self.cfg[section] = {}
+            for key, val in configObj.items(section):
+                self.cfg[section][key] = val
+
 config = Config(configPath)
+pp.pprint(config.cfg)
