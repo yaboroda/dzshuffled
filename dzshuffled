@@ -6,12 +6,9 @@ import os
 import pprint
 import re
 
-import http.client
 import http.server
-import urllib.error
-import urllib.parse
-import urllib.request
 import webbrowser
+import requests
 
 SCRIPT_VERSION = '0.0.0.0'
 
@@ -111,14 +108,14 @@ class DeezerAuth(object):
         self.server = _AuthorizationServer('localhost', self.port)
 
     def fetchToken(self):
-        url = self.urlToken.format(self.appId, self.secret, self.code)
-        f = urllib.request.urlopen(url)
-        fstr = f.read().decode('utf-8')
+        url = self.urlToken.format(self.appId, self.secret, self.code)        
+        response = requests.get(url)
+        reToken = re.search('access_token=([^&]+)', response.text)
 
-        if len(fstr.split('&')) != 2:
+        if reToken:
+            self.token = reToken.group(1)
+        else:
             raise Exception('Cant get token from deezer')
-
-        self.token = fstr.split('&')[0].split('=')[1]
 
 class _AuthorizationServer(http.server.HTTPServer):
     def __init__(self, host, port):
@@ -136,7 +133,7 @@ class _AuthorizationHandler(http.server.BaseHTTPRequestHandler):
             self.send_header('Content-Type', 'text/html')
             self.end_headers()
             self.wfile.write(b'<script>close()</script>Thanks! You may now close this window.')
-            raise _Authorization(re.search('code=([^&]*)', self.path).group(1))
+            raise _Authorization(re.search('code=([^&]+)', self.path).group(1))
 
         else:
             self.send_error(404)
@@ -148,6 +145,11 @@ class _AuthorizationHandler(http.server.BaseHTTPRequestHandler):
 class _Authorization(Exception):
     def __init__(self, code):
         self.code = code
+
+# class DeezerTool(object):
+#     baseUrl = 'http://api.deezer.com'
+
+#     def apiGet(self, uri)
 
 if __name__ == '__main__':
     config = Config(CONFIG_PATH)
