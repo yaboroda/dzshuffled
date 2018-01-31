@@ -5,6 +5,7 @@ import configparser
 import os
 import pprint
 import re
+import json
 
 import http.server
 import webbrowser
@@ -73,6 +74,9 @@ class Config(object):
 
         self.cfg.set(section, option, value)
         self.write()
+
+    def sections(self):
+        return self.cfg.sections()
         
 
 
@@ -146,16 +150,51 @@ class _Authorization(Exception):
     def __init__(self, code):
         self.code = code
 
-# class DeezerTool(object):
-#     baseUrl = 'http://api.deezer.com'
+class DeezerTool(object):
+    baseUrl = 'http://api.deezer.com'
 
-#     def apiGet(self, uri)
+    def __init__(self, config):
+        self.config = config
+
+    def getToken(self):
+        return self.config.get('token', 'token')
+
+    def addRequiredParams(self, params):
+        if 'access_token' not in params:
+            params['access_token'] = self.getToken()
+        if 'expires' not in params:
+            params['expires'] = 0
+        return params
+
+
+    def apiGet(self, uri, params = {}):
+        params = self.addRequiredParams(params)
+        response = json.loads(
+            requests.get(self.baseUrl + uri, params).text
+        )
+
+        return response
+
+    def apiPost(self, uri, params={}):
+        params = self.addRequiredParams(params)
+        response = json.loads(
+            requests.post(self.baseUrl + uri, params).text
+        )
+
+        return response
+
+    def getAllPlaylists(self):
+        playlists = self.apiGet('/user/me/playlists')
+        pp.pprint(playlists)
+
 
 if __name__ == '__main__':
     config = Config(CONFIG_PATH)
 
-    auth = DeezerAuth()
-    auth.setParams(config.get('auth'))
-    auth.authorize()
-    config.set('token', 'token', auth.getToken())
-    pp.pprint(config.get('token', 'token'))
+    # auth = DeezerAuth()
+    # auth.setParams(config.get('auth'))
+    # auth.authorize()
+    
+    dTool = DeezerTool(config)
+    dTool.getAllPlaylists()
+    
