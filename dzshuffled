@@ -6,12 +6,13 @@ import os
 import pprint
 import re
 import json
+import sys
 
 import http.server
 import webbrowser
 import requests
 
-SCRIPT_VERSION = '0.0.0.0'
+SCRIPT_VERSION = '0.0.1.0'
 
 CONFIG_PATH = './config.ini'
 
@@ -82,8 +83,9 @@ class Config(object):
 
 class DeezerAuth(object):
     urlAuth = 'https://connect.deezer.com/oauth/auth.php?app_id={0}&redirect_uri={1}&perms=basic_access,manage_library'
-    urlToken = 'https://connect.deezer.com/oauth/access_token.php?app_id={0}&secret={1}&code={2}'
+    urlToken = 'https://connect.deezer.com/oauth/access_token.php?app_id={0}&secret={1}&code={2}&output=json'
     urlRedirect = 'http://localhost:{0}/authfinish'
+    urlCheckToken = 'http://api.deezer.com/user/me?access_token={0}'
 
     def getToken(self):
         return self.token
@@ -92,6 +94,9 @@ class DeezerAuth(object):
         self.port = int(params['port'])
         self.secret = params['secret']
         self.appId = params['app_id']
+        self.token = token
+
+    def setToken(self, token):
         self.token = token
 
     def authorize(self):
@@ -113,13 +118,23 @@ class DeezerAuth(object):
 
     def fetchToken(self):
         url = self.urlToken.format(self.appId, self.secret, self.code)        
-        response = requests.get(url)
-        reToken = re.search('access_token=([^&]+)', response.text)
+        response = json.loads(requests.get(url).text)
 
-        if reToken:
-            self.token = reToken.group(1)
+        if 'access_token' in response:
+            self.token = response['access_token']
         else:
             raise Exception('Cant get token from deezer')
+
+    def checkToken(self):
+        url = self.urlCheckToken.format(self.token)
+        response = json.loads(requests.get(url).text)
+
+        if 'error' in response:
+            return False
+        elif 'type' in response and response['type'] == 'user':
+            return True
+        else:
+            raise Exception('Cant check auth token')
 
 class _AuthorizationServer(http.server.HTTPServer):
     def __init__(self, host, port):
@@ -152,12 +167,44 @@ class _Authorization(Exception):
 
 class DeezerTool(object):
     baseUrl = 'http://api.deezer.com'
+    limit = 1000
 
-    def __init__(self, config):
+    def __init__(self, config, auth):
         self.config = config
+        self.auth = auth
+        self.auth.setParams(config.get('auth'), config.get('token', 'token'))
+
+    def checkAndUpdateToken(self):
+        if not self.checkToken():
+            self.updateToken()
+        return self
+
+    def updateToken(self):
+        self.auth.authorize()
+        self.config.set('token', 'token', self.auth.getToken())
+        return self
+
+    def checkToken(self):
+        return self.auth.checkToken()
 
     def getToken(self):
         return self.config.get('token', 'token')
+
+    def processApiError(self, errorData):
+        message = errorData['message']
+        print('Error '+str(errorData['code'])+': '+message)
+        sys.exit()
+
+    def prepareResponse(self, response):
+        response = json.loads(response.text)
+
+        if 'error' in response:
+            return self.processApiError(response['error'])
+        elif 'data' not in response:
+            raise Exception('Error occured on request to Deezer api')
+        else:
+            return response['data']
+
 
     def addRequiredParams(self, params):
         if 'access_token' not in params:
@@ -169,32 +216,37 @@ class DeezerTool(object):
 
     def apiGet(self, uri, params = {}):
         params = self.addRequiredParams(params)
-        response = json.loads(
-            requests.get(self.baseUrl + uri, params).text
-        )
-
-        return response
+        response = requests.get(self.baseUrl + uri, params)
+        return self.prepareResponse(response)
 
     def apiPost(self, uri, params={}):
         params = self.addRequiredParams(params)
-        response = json.loads(
-            requests.post(self.baseUrl + uri, params).text
-        )
+        response = requests.post(self.baseUrl + uri, params).text
+        return self.prepareResponse(response)
 
-        return response
+    def getPlaylists(self):
+        return self.playlists
 
-    def getAllPlaylists(self):
-        playlists = self.apiGet('/user/me/playlists')
-        pp.pprint(playlists)
+    def filterPlaylistsByTitle(self, titles):
+        self.playlists = [pl for pl in self.playlists if pl['title'] in titles]
+        return self
+
+    def findAllPlaylists(self):
+        self.playlists = self.apiGet('/user/me/playlists')
+        return self
 
 
 if __name__ == '__main__':
     config = Config(CONFIG_PATH)
+    auth = DeezerAuth()
 
-    # auth = DeezerAuth()
-    # auth.setParams(config.get('auth'))
-    # auth.authorize()
-    
-    dTool = DeezerTool(config)
-    dTool.getAllPlaylists()
+    dTool = DeezerTool(config, auth)
+
+    data = dTool\
+        .checkAndUpdateToken()\
+        .findAllPlaylists()\
+        .filterPlaylistsByTitle(['работа', 'работа 2'])\
+        .getPlaylists()
+
+    pp.pprint(data)
     
