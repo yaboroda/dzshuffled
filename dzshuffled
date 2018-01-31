@@ -13,15 +13,13 @@ import urllib.parse
 import urllib.request
 import webbrowser
 
-scriptVersion = '0.0.0.0'
+SCRIPT_VERSION = '0.0.0.0'
 
-configPath = './config.ini'
+CONFIG_PATH = './config.ini'
 
 pp = pprint.PrettyPrinter(indent=4)
 
 class Config(object):
-    cfg = {}
-    path = ''
 
     def __init__(self, path):
         self.path = path
@@ -41,14 +39,33 @@ class Config(object):
             newConfig.write(configfile)
 
     def readConfigFile(self):
-        configObj = configparser.ConfigParser()
-        configObj.read(self.path)
+        self.cfg = configparser.ConfigParser()
+        self.cfg.read(self.path)
+    
+    def get(self, section=None, item=None):
+        if item is None and section is None:
+            return self.getAll()
+        elif item is None:
+            return self.getSection(section)
+        else:
+            return self.getItem(section, item)
 
-        self.cfg = {}
-        for section in configObj.sections():
-            self.cfg[section] = {}
-            for key, val in configObj.items(section):
-                self.cfg[section][key] = val
+    def getAll(self):
+        data = {}
+        for cfg_section in self.cfg.sections():
+            data[cfg_section] = {}
+            for key, val in self.cfg.items(cfg_section):
+                data[cfg_section][key] = val
+        return data
+
+    def getSection(self, section):
+        data = {}
+        for key, val in self.cfg.items(section):
+            data[key] = val
+        return data
+
+    def getItem(self, section, item):
+        return self.cfg.get(section, item)
 
 class DeezerAuth(object):
     urlAuth = 'https://connect.deezer.com/oauth/auth.php?app_id={0}&redirect_uri={1}&perms=basic_access,manage_library'
@@ -121,9 +138,10 @@ class _Authorization(Exception):
         self.code = code
 
 if __name__ == '__main__':
-    config = Config(configPath)
+    config = Config(CONFIG_PATH)
+    # pp.pprint(config.get())
 
     auth = DeezerAuth()
-    auth.setParams(config.cfg['auth'])
+    auth.setParams(config.get('auth'))
     auth.authorize()
     pp.pprint(auth.getToken())
