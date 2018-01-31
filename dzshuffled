@@ -25,30 +25,33 @@ class Config(object):
         self.path = path
 
         if not os.path.isfile(path):
-            self.createConfigFile()
+            self.createNewConfig()
+        else:
+            self.read()
 
-        self.readConfigFile()
+    def createNewConfig(self):
+        self.cfg = configparser.ConfigParser()
 
-    def createConfigFile(self):
-        newConfig = configparser.ConfigParser()
+        self.cfg['auth'] = {'app_id': '', 'secret': '', 'port': '8090'}
+        self.cfg['token'] = {'token': ''}
 
-        newConfig['auth'] = {'app_id': '', 'secret': '', 'port': '8090'}
-        newConfig['token'] = {'token': ''}
+        self.write()
 
+    def write(self):
         with open(self.path, 'w') as configfile:
-            newConfig.write(configfile)
+            self.cfg.write(configfile)
 
-    def readConfigFile(self):
+    def read(self):
         self.cfg = configparser.ConfigParser()
         self.cfg.read(self.path)
     
-    def get(self, section=None, item=None):
-        if item is None and section is None:
+    def get(self, section=None, option=None):
+        if option is None and section is None:
             return self.getAll()
-        elif item is None:
+        elif option is None:
             return self.getSection(section)
         else:
-            return self.getItem(section, item)
+            return self.getOption(section, option)
 
     def getAll(self):
         data = {}
@@ -64,8 +67,17 @@ class Config(object):
             data[key] = val
         return data
 
-    def getItem(self, section, item):
-        return self.cfg.get(section, item)
+    def getOption(self, section, option):
+        return self.cfg.get(section, option)
+
+    def set(self, section, option, value):
+        if not self.cfg.has_section(section):
+            self.cfg.add_section(section)
+
+        self.cfg.set(section, option, value)
+        self.write()
+        
+
 
 class DeezerAuth(object):
     urlAuth = 'https://connect.deezer.com/oauth/auth.php?app_id={0}&redirect_uri={1}&perms=basic_access,manage_library'
@@ -139,9 +151,9 @@ class _Authorization(Exception):
 
 if __name__ == '__main__':
     config = Config(CONFIG_PATH)
-    # pp.pprint(config.get())
 
     auth = DeezerAuth()
     auth.setParams(config.get('auth'))
     auth.authorize()
-    pp.pprint(auth.getToken())
+    config.set('token', 'token', auth.getToken())
+    pp.pprint(config.get('token', 'token'))
