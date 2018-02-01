@@ -326,7 +326,15 @@ class DeezerTool(object):
         response = self.apiDelete(uri, 'single')
         return self
 
+    def removePlaylistByTitle(self, title):
+        self.findAllPlaylists()
+        self.filterPlaylistsByTitle(title)
 
+        for pl in self.playlists:
+            self.removePlaylistById(pl['id'])
+
+        self.playlists = []
+        return self
 
 if __name__ == '__main__':
     config = Config(CONFIG_PATH)
@@ -353,7 +361,7 @@ if __name__ == '__main__':
     
     data = dTool\
         .checkAndUpdateToken()\
-        .removePlaylistById(4096874402)
+        .removePlaylistByTitle('pl1')
 
     pp.pprint(data)
 
