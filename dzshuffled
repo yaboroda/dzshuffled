@@ -83,7 +83,7 @@ class Config(object):
 
 
 class DeezerAuth(object):
-    urlAuth = 'https://connect.deezer.com/oauth/auth.php?app_id={0}&redirect_uri={1}&perms=basic_access,manage_library'
+    urlAuth = 'https://connect.deezer.com/oauth/auth.php?app_id={0}&redirect_uri={1}&perms=basic_access,manage_library,delete_library'
     urlToken = 'https://connect.deezer.com/oauth/access_token.php?app_id={0}&secret={1}&code={2}&output=json'
     urlRedirect = 'http://localhost:{0}/authfinish'
     urlCheckToken = 'http://api.deezer.com/user/me?access_token={0}'
@@ -181,7 +181,7 @@ class _Authorization(Exception):
 
 class DeezerTool(object):
     baseUrl = 'http://api.deezer.com'
-    limit = 1000
+    limitTracks = 1000
 
     playlists = []
     tracks = []
@@ -214,7 +214,8 @@ class DeezerTool(object):
 
     def processApiError(self, errorData):
         message = errorData['message']
-        print('Error '+str(errorData['code'])+': '+message)
+        code = ' '+str(errorData['code']) if 'code' in errorData else ''
+        print('Error'+code+': '+message)
         sys.exit()
 
     def prepareResponse(self, response, responseType):
@@ -223,6 +224,9 @@ class DeezerTool(object):
         # if debug:
         #     pp.pprint(response)
         #     sys.exit()
+        
+        if isinstance(response, bool):
+            return response
 
         if 'error' in response:
             return self.processApiError(response['error'])
@@ -248,8 +252,6 @@ class DeezerTool(object):
     def addRequiredParams(self, params):
         if 'access_token' not in params:
             params['access_token'] = self.getToken()
-        if 'expires' not in params:
-            params['expires'] = 0
         return params
 
 
@@ -265,6 +267,16 @@ class DeezerTool(object):
     def apiPost(self, uri, responseType, params={}):
         params = self.addRequiredParams(params)
         response = requests.post(self.baseUrl + uri, params)
+        return self.prepareResponse(response, responseType)
+
+    def apiDelete(self, uri, responseType, params={}):
+        params = self.addRequiredParams(params)
+        uri += '?access_token={0}'.format(params.pop('access_token'))
+
+        for p, val in params.items():
+            uri += '&{0}={1}'.format(p, val)
+        
+        response = requests.delete(self.baseUrl + uri)
         return self.prepareResponse(response, responseType)
 
     def getPlaylists(self):
@@ -295,7 +307,7 @@ class DeezerTool(object):
 
     def filterTracksByLimit(self, limit=None):
         if limit is None:
-            limit = self.limit
+            limit = self.limitTracks
 
         self.tracks = self.tracks[:limit]
         return self
@@ -307,6 +319,11 @@ class DeezerTool(object):
         uri = '/user/{0}/playlists'.format(self.getUser()['id'])
         response = self.apiPost(uri, 'single', {'title': title})
         self.newPlaylistId = response['id']
+        return self
+
+    def removePlaylistById(self, id):
+        uri = '/playlist/{0}'.format(id)
+        response = self.apiDelete(uri, 'single')
         return self
 
 
@@ -330,11 +347,15 @@ if __name__ == '__main__':
     #     .checkAndUpdateToken()\
     #     .getUser()
     
+    # data = dTool\
+    #     .checkAndUpdateToken()\
+    #     .createPlaylist('pl1')
+    
     data = dTool\
         .checkAndUpdateToken()\
-        .createPlaylist('pl1')
+        .removePlaylistById(4096874402)
 
-    pp.pprint(data.newPlaylistId)
+    pp.pprint(data)
 
     # data2 = []
     # counter = 0
