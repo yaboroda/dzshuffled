@@ -241,7 +241,7 @@ class DeezerTool(object):
             return response
 
         else:
-            raise Exception('Unknown response type "'+responseType+'", it can be on of those: single, list')
+            raise Exception('Unknown response type "'+responseType+'", it can be one of those: single, list')
            
 
 
@@ -303,7 +303,7 @@ class DeezerTool(object):
     def getUser(self):
         return self.auth.getUser()
 
-    def createPlalist(self, title):
+    def createPlaylist(self, title):
         uri = '/user/{0}/playlists'.format(self.getUser()['id'])
         response = self.apiPost(uri, 'single', {'title': title})
         self.newPlaylistId = response['id']
@@ -332,7 +332,7 @@ if __name__ == '__main__':
     
     data = dTool\
         .checkAndUpdateToken()\
-        .createPlalist('pl1')
+        .createPlaylist('pl1')
 
     pp.pprint(data.newPlaylistId)
 
