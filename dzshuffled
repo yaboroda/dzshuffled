@@ -7,6 +7,7 @@ import pprint
 import re
 import json
 import sys
+from random import shuffle
 
 import http.server
 import webbrowser
@@ -86,6 +87,7 @@ class DeezerAuth(object):
     urlToken = 'https://connect.deezer.com/oauth/access_token.php?app_id={0}&secret={1}&code={2}&output=json'
     urlRedirect = 'http://localhost:{0}/authfinish'
     urlCheckToken = 'http://api.deezer.com/user/me?access_token={0}'
+    user = None
 
     def getToken(self):
         return self.token
@@ -132,9 +134,21 @@ class DeezerAuth(object):
         if 'error' in response:
             return False
         elif 'type' in response and response['type'] == 'user':
+            self.user = response
             return True
         else:
             raise Exception('Cant check auth token')
+
+    def fetchUser(self):
+        # user fetchig on token check
+        if not self.checkToken():
+            raise Exception('Cant fetch user info due failed token check')
+
+    def getUser(self):
+        if self.user is None:
+            self.fetchUser()
+
+        return self.user
 
 class _AuthorizationServer(http.server.HTTPServer):
     def __init__(self, host, port):
@@ -184,7 +198,12 @@ class DeezerTool(object):
 
     def updateToken(self):
         self.auth.authorize()
-        self.config.set('token', 'token', self.auth.getToken())
+
+        if self.checkToken():
+            self.config.set('token', 'token', self.auth.getToken())
+        else:
+            raise Exception('Cant verify new token')
+
         return self
 
     def checkToken(self):
@@ -261,6 +280,20 @@ class DeezerTool(object):
 
         return self
 
+    def shuffleTracks(self):
+        shuffle(self.tracks)
+        return self
+
+    def filterTracksByLimit(self, limit=None):
+        if limit is None:
+            limit = self.limit
+
+        self.tracks = self.tracks[:limit]
+        return self
+
+    def getUser(self):
+        return self.auth.getUser()
+
 
 
 if __name__ == '__main__':
@@ -269,19 +302,26 @@ if __name__ == '__main__':
 
     dTool = DeezerTool(config, auth)
 
+    # data = dTool\
+    #     .checkAndUpdateToken()\
+    #     .findAllPlaylists()\
+    #     .filterPlaylistsByTitle(['работа', 'работа 2'])\
+    #     .findTracksByPlaylists()\
+    #     .shuffleTracks()\
+    #     .filterTracksByLimit()\
+    #     .getTracks()
+    
     data = dTool\
         .checkAndUpdateToken()\
-        .findAllPlaylists()\
-        .filterPlaylistsByTitle(['работа', 'работа 2'])\
-        .findTracksByPlaylists()\
-        .getTracks()
+        .getUser()
 
-    data2 = []
-    counter = 0
-    for item in data:
-        counter += 1
-        data2.append({'num':counter, 'artist':item['artist']['name'], 'track':item['title']})
-        
-    pp.pprint(len(data))
-    pp.pprint(data2)
+    pp.pprint(data)
+
+    # data2 = []
+    # counter = 0
+    # for item in data:
+    #     counter += 1
+    #     data2.append({'num':counter, 'artist':item['artist']['name'], 'track':item['title']})
+
+    # pp.pprint(data2)
     
