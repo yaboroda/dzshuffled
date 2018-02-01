@@ -13,7 +13,7 @@ import http.server
 import webbrowser
 import requests
 
-SCRIPT_VERSION = '0.0.1.0'
+SCRIPT_VERSION = '0.5.0.0'
 
 CONFIG_PATH = './config.ini'
 
@@ -260,7 +260,7 @@ class DeezerTool(object):
         response = requests.get(self.baseUrl + uri, params)
         return self.prepareResponse(response, responseType)
 
-    def apiGetStrict(self, responseType, url):
+    def apiGetStrict(self, url, responseType):
         response = requests.get(url)
         return self.prepareResponse(response, responseType)
 
@@ -336,40 +336,33 @@ class DeezerTool(object):
         self.playlists = []
         return self
 
+    def addTracksToPlaylist(self, plId):
+        uri = '/playlist/{0}/tracks'.format(plId)
+        trackIds = ','.join([ str(t['id']) for t in self.tracks ])
+        response = self.apiPost(uri, 'single', {'songs': trackIds})
+        return response
+
+    def addTracksToNewPlaylist(self):
+        return self.addTracksToPlaylist(self.newPlaylistId)
+
+    def resetShuffledPlaylist(self, title, sourcePls, limit = None):
+        if limit is None:
+            limit = self.limitTracks
+
+        self.removePlaylistByTitle(title)\
+            .createPlaylist(title)\
+            .findAllPlaylists()\
+            .filterPlaylistsByTitle(sourcePls)\
+            .findTracksByPlaylists()\
+            .shuffleTracks()\
+            .filterTracksByLimit(limit)\
+            .addTracksToNewPlaylist()
+
 if __name__ == '__main__':
     config = Config(CONFIG_PATH)
     auth = DeezerAuth()
 
     dTool = DeezerTool(config, auth)
 
-    # data = dTool\
-    #     .checkAndUpdateToken()\
-    #     .findAllPlaylists()\
-    #     .filterPlaylistsByTitle(['работа', 'работа 2'])\
-    #     .findTracksByPlaylists()\
-    #     .shuffleTracks()\
-    #     .filterTracksByLimit()\
-    #     .getTracks()
-    
-    # data = dTool\
-    #     .checkAndUpdateToken()\
-    #     .getUser()
-    
-    # data = dTool\
-    #     .checkAndUpdateToken()\
-    #     .createPlaylist('pl1')
-    
-    data = dTool\
-        .checkAndUpdateToken()\
-        .removePlaylistByTitle('pl1')
-
-    pp.pprint(data)
-
-    # data2 = []
-    # counter = 0
-    # for item in data:
-    #     counter += 1
-    #     data2.append({'num':counter, 'artist':item['artist']['name'], 'track':item['title']})
-
-    # pp.pprint(data2)
+    dTool.checkAndUpdateToken().resetShuffledPlaylist('pl1', ['работа', 'работа 2'])
     
