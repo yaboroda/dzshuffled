@@ -217,23 +217,32 @@ class DeezerTool(object):
         print('Error '+str(errorData['code'])+': '+message)
         sys.exit()
 
-    def prepareResponse(self, response, debug=False):
+    def prepareResponse(self, response, responseType):
         response = json.loads(response.text)
 
-        if debug:
-            pp.pprint(response)
-            sys.exit()
-
-        nextPages = []
-        if 'next' in response:
-            nextPages = self.apiGetStrict(response['next'])
+        # if debug:
+        #     pp.pprint(response)
+        #     sys.exit()
 
         if 'error' in response:
             return self.processApiError(response['error'])
-        elif 'data' not in response:
-            raise Exception('Error occured on request to Deezer api')
-        else:
+
+        if responseType == 'list':
+            if 'data' not in response:
+                raise Exception('Error occured on request to Deezer api')
+
+            nextPages = []
+            if 'next' in response:
+                nextPages = self.apiGetStrict(response['next'], 'list')
+
             return response['data'] + nextPages
+
+        elif responseType == 'single':
+            return response
+
+        else:
+            raise Exception('Unknown response type "'+responseType+'", it can be on of those: single, list')
+           
 
 
     def addRequiredParams(self, params):
@@ -244,19 +253,19 @@ class DeezerTool(object):
         return params
 
 
-    def apiGet(self, uri, params = {}, debug=False):
+    def apiGet(self, uri, responseType, params = {}):
         params = self.addRequiredParams(params)
         response = requests.get(self.baseUrl + uri, params)
-        return self.prepareResponse(response, debug)
+        return self.prepareResponse(response, responseType)
 
-    def apiGetStrict(self, url):
+    def apiGetStrict(self, responseType, url):
         response = requests.get(url)
-        return self.prepareResponse(response)
+        return self.prepareResponse(response, responseType)
 
-    def apiPost(self, uri, params={}):
+    def apiPost(self, uri, responseType, params={}):
         params = self.addRequiredParams(params)
-        response = requests.post(self.baseUrl + uri, params).text
-        return self.prepareResponse(response)
+        response = requests.post(self.baseUrl + uri, params)
+        return self.prepareResponse(response, responseType)
 
     def getPlaylists(self):
         return self.playlists
@@ -269,13 +278,13 @@ class DeezerTool(object):
         return self
 
     def findAllPlaylists(self):
-        self.playlists = self.apiGet('/user/me/playlists')
+        self.playlists = self.apiGet('/user/me/playlists', 'list')
         return self
 
     def findTracksByPlaylists(self):
         for pl in self.playlists:
             uri = '/playlist/{0}/tracks'.format(pl['id'])
-            tracks = self.apiGet(uri)
+            tracks = self.apiGet(uri, 'list')
             self.tracks += tracks
 
         return self
@@ -294,6 +303,12 @@ class DeezerTool(object):
     def getUser(self):
         return self.auth.getUser()
 
+    def createPlalist(self, title):
+        uri = '/user/{0}/playlists'.format(self.getUser()['id'])
+        response = self.apiPost(uri, 'single', {'title': title})
+        self.newPlaylistId = response['id']
+        return self
+
 
 
 if __name__ == '__main__':
@@ -311,11 +326,15 @@ if __name__ == '__main__':
     #     .filterTracksByLimit()\
     #     .getTracks()
     
+    # data = dTool\
+    #     .checkAndUpdateToken()\
+    #     .getUser()
+    
     data = dTool\
         .checkAndUpdateToken()\
-        .getUser()
+        .createPlalist('pl1')
 
-    pp.pprint(data)
+    pp.pprint(data.newPlaylistId)
 
     # data2 = []
     # counter = 0
