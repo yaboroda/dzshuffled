@@ -169,6 +169,9 @@ class DeezerTool(object):
     baseUrl = 'http://api.deezer.com'
     limit = 1000
 
+    playlists = []
+    tracks = []
+
     def __init__(self, config, auth):
         self.config = config
         self.auth = auth
@@ -195,15 +198,23 @@ class DeezerTool(object):
         print('Error '+str(errorData['code'])+': '+message)
         sys.exit()
 
-    def prepareResponse(self, response):
+    def prepareResponse(self, response, debug=False):
         response = json.loads(response.text)
+
+        if debug:
+            pp.pprint(response)
+            sys.exit()
+
+        nextPages = []
+        if 'next' in response:
+            nextPages = self.apiGetStrict(response['next'])
 
         if 'error' in response:
             return self.processApiError(response['error'])
         elif 'data' not in response:
             raise Exception('Error occured on request to Deezer api')
         else:
-            return response['data']
+            return response['data'] + nextPages
 
 
     def addRequiredParams(self, params):
@@ -214,9 +225,13 @@ class DeezerTool(object):
         return params
 
 
-    def apiGet(self, uri, params = {}):
+    def apiGet(self, uri, params = {}, debug=False):
         params = self.addRequiredParams(params)
         response = requests.get(self.baseUrl + uri, params)
+        return self.prepareResponse(response, debug)
+
+    def apiGetStrict(self, url):
+        response = requests.get(url)
         return self.prepareResponse(response)
 
     def apiPost(self, uri, params={}):
@@ -227,6 +242,9 @@ class DeezerTool(object):
     def getPlaylists(self):
         return self.playlists
 
+    def getTracks(self):
+        return self.tracks
+
     def filterPlaylistsByTitle(self, titles):
         self.playlists = [pl for pl in self.playlists if pl['title'] in titles]
         return self
@@ -234,6 +252,15 @@ class DeezerTool(object):
     def findAllPlaylists(self):
         self.playlists = self.apiGet('/user/me/playlists')
         return self
+
+    def findTracksByPlaylists(self):
+        for pl in self.playlists:
+            uri = '/playlist/{0}/tracks'.format(pl['id'])
+            tracks = self.apiGet(uri)
+            self.tracks += tracks
+
+        return self
+
 
 
 if __name__ == '__main__':
@@ -246,7 +273,15 @@ if __name__ == '__main__':
         .checkAndUpdateToken()\
         .findAllPlaylists()\
         .filterPlaylistsByTitle(['работа', 'работа 2'])\
-        .getPlaylists()
+        .findTracksByPlaylists()\
+        .getTracks()
 
-    pp.pprint(data)
+    data2 = []
+    counter = 0
+    for item in data:
+        counter += 1
+        data2.append({'num':counter, 'artist':item['artist']['name'], 'track':item['title']})
+        
+    pp.pprint(len(data))
+    pp.pprint(data2)
     
