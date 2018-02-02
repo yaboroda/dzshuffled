@@ -13,7 +13,7 @@ import http.server
 import webbrowser
 import requests
 
-SCRIPT_VERSION = '0.5.2.0'
+SCRIPT_VERSION = '0.5.3.0'
 
 CONFIG_PATH = './config.ini'
 
@@ -369,15 +369,44 @@ class DeezerTool(object):
     def addTracksToNewPlaylist(self):
         return self.addTracksToPlaylist(self.newPlaylistId)
 
+    def resetPlaylistByTitle(self, title):
+        # find all playlists by title
+        self.findAllPlaylists().filterPlaylistsByTitles(title)
+
+        # if there is more then one, remove it and create new
+        if len(self.playlists) > 1:
+            self.removePlaylistByTitle(title)
+            self.createPlaylist(title)
+            self.targetPlaylistId = self.newPlaylistId
+
+        # if there is only one, delete all tracks from it
+        elif len(self.playlists) == 1:
+            self.targetPlaylistId = self.playlists[0]['id']
+            self.findTracksByPlaylists()\
+                .purgePlaylistById(self.targetPlaylistId)
+
+        # if there is no one, create new
+        else:
+            self.createPlaylist(title)
+            self.targetPlaylistId = self.newPlaylistId
+
+        return self
+
     def resetShuffledPlaylist(self, title, sourcePls, limit = None):
-        self.removePlaylistByTitle(title)\
-            .createPlaylist(title)\
-            .findAllPlaylists()\
+
+        # reset playlist and write its id to self.targetPlaylistId
+        self.resetPlaylistByTitle(title)
+
+        # find all tracks from list sourcePls, suffle it and cut to limit
+        # then shove to target playlist
+        self.findAllPlaylists()\
             .filterPlaylistsByTitles(sourcePls)\
             .findTracksByPlaylists()\
             .shuffleTracks()\
             .filterTracksByLimit(limit)\
-            .addTracksToNewPlaylist()
+            .addTracksToPlaylist(self.targetPlaylistId)
+
+        return self
 
     def getStringOfIds(self, itemsList):
         trackIds = ','.join([ str(item['id']) for item in itemsList ])
