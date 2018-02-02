@@ -13,7 +13,7 @@ import http.server
 import webbrowser
 import requests
 
-SCRIPT_VERSION = '0.5.1.0'
+SCRIPT_VERSION = '0.5.2.0'
 
 CONFIG_PATH = './config.ini'
 
@@ -183,6 +183,7 @@ class DeezerTool(object):
     baseUrl = 'http://api.deezer.com'
     limitTracks = 1000
     limitResultsPerRequest = 500
+    limitItemsToDeleteAtOneRequest = 500
 
     playlists = []
     tracks = []
@@ -291,6 +292,9 @@ class DeezerTool(object):
         return self.tracks
 
     def filterPlaylistsByTitles(self, titles):
+        if isinstance(titles, str):
+            titles = [titles]
+
         self.playlists = [pl for pl in self.playlists if pl['title'] in titles]
         return self
 
@@ -331,10 +335,20 @@ class DeezerTool(object):
         response = self.apiDelete(uri, 'single')
         return self
 
-    def deleteTracksFromPlaylists(self, plId):
+    def purgePlaylistById(self, plId):
         uri = '/playlist/{0}/tracks'.format(plId)
-        trackIds = self.getStringOfTracksIds()
-        response = self.apiDelete(uri, 'single', {'songs': trackIds})
+        groups = self.getStringOfIdsByGroups(self.tracks, self.limitItemsToDeleteAtOneRequest)
+
+        for trackIds in groups:
+            response = self.apiDelete(uri, 'single', {'songs': trackIds})
+
+    def purgePlaylistByTitle(self, title):
+        self.findAllPlaylists()\
+            .filterPlaylistsByTitles(title)\
+            .findTracksByPlaylists()
+
+        for pl in self.playlists:
+            self.purgePlaylistById(pl['id'])
 
     def removePlaylistByTitle(self, title):
         self.findAllPlaylists()
@@ -348,7 +362,7 @@ class DeezerTool(object):
 
     def addTracksToPlaylist(self, plId):
         uri = '/playlist/{0}/tracks'.format(plId)
-        trackIds = self.getStringOfTracksIds()
+        trackIds = self.getStringOfIds(self.tracks)
         response = self.apiPost(uri, 'single', {'songs': trackIds})
         return response
 
@@ -365,9 +379,16 @@ class DeezerTool(object):
             .filterTracksByLimit(limit)\
             .addTracksToNewPlaylist()
 
-    def getStringOfTracksIds(self):
-        trackIds = ','.join([ str(t['id']) for t in self.tracks ])
+    def getStringOfIds(self, itemsList):
+        trackIds = ','.join([ str(item['id']) for item in itemsList ])
         return trackIds
+
+    def getStringOfIdsByGroups(self, itemsList, limit):
+        groups = []
+        for i in range(0, len(itemsList), limit):
+            groups.append(self.getStringOfIds( itemsList[i:i+limit] ))
+
+        return groups
 
 if __name__ == '__main__':
     config = Config(CONFIG_PATH)
@@ -377,7 +398,7 @@ if __name__ == '__main__':
 
     # dTool.checkAndUpdateToken().removePlaylistByTitle('pls2')
 
-    # dTool.checkAndUpdateToken().findAllPlaylists().findTracksByPlaylists()
+    # dTool.checkAndUpdateToken().purgePlaylistByTitle('pls')        
 
     dTool.checkAndUpdateToken().resetShuffledPlaylist('pls', ['работа', 'работа 2'])
     
