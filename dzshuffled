@@ -13,7 +13,7 @@ import http.server
 import webbrowser
 import requests
 
-SCRIPT_VERSION = '0.5.0.2'
+SCRIPT_VERSION = '0.5.1.0'
 
 CONFIG_PATH = './config.ini'
 
@@ -182,6 +182,7 @@ class _Authorization(Exception):
 class DeezerTool(object):
     baseUrl = 'http://api.deezer.com'
     limitTracks = 1000
+    limitResultsPerRequest = 500
 
     playlists = []
     tracks = []
@@ -252,6 +253,10 @@ class DeezerTool(object):
     def addRequiredParams(self, params):
         if 'access_token' not in params:
             params['access_token'] = self.getToken()
+
+        if 'limit' not in params:
+            params['limit'] = self.limitResultsPerRequest
+
         return params
 
 
@@ -370,7 +375,9 @@ if __name__ == '__main__':
 
     dTool = DeezerTool(config, auth)
 
-    # dTool.checkAndUpdateToken().createPlaylist('pls pls')
+    # dTool.checkAndUpdateToken().removePlaylistByTitle('pls2')
 
-    # dTool.checkAndUpdateToken().resetShuffledPlaylist('pls pls', ['pls1', 'pls2', 'pls'])
+    # dTool.checkAndUpdateToken().findAllPlaylists().findTracksByPlaylists()
+
+    dTool.checkAndUpdateToken().resetShuffledPlaylist('pls', ['работа', 'работа 2'])
     
