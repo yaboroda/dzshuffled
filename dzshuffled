@@ -17,6 +17,8 @@ SCRIPT_VERSION = '0.5.4.0'
 
 CONFIG_PATH = './config.ini'
 
+DEBUG_MODE = False
+
 pp = pprint.PrettyPrinter(indent=4)
 
 class Config(object):
@@ -26,6 +28,8 @@ class Config(object):
 
         if not os.path.isfile(path):
             self.createNewConfig()
+            print('New config was created in {}'.format(path))
+            sys.exit()
         else:
             self.read()
 
@@ -34,6 +38,7 @@ class Config(object):
 
         self.cfg['auth'] = {'app_id': '', 'secret': '', 'port': '8090'}
         self.cfg['token'] = {'token': ''}
+        self.cfg['pl_example'] = {'title': 'Example shuffled playlist', 'type': 'shuffled', 'source': 'playlist 1, playlist 2', 'limit': 1000}
 
         self.write()
 
@@ -102,6 +107,8 @@ class DeezerAuth(object):
         self.token = token
 
     def authorize(self):
+        if not self.appId or not self.secret:
+            raise Exception('You cant get authorization token without app_id and secret. Fill it in config file or write there valid token.')
         self.fetchCode()
         self.fetchToken()            
 
@@ -179,6 +186,11 @@ class _Authorization(Exception):
     def __init__(self, code):
         self.code = code
 
+class DeezerApiError(Exception):
+    def __init__(self, message, code):
+        excMessage = 'Deezer API error {1}: {0}'.format(message, 'code '+str(code) if code else '')
+        super().__init__(excMessage)
+
 class DeezerTool(object):
     baseUrl = 'http://api.deezer.com'
     limitTracks = 1000
@@ -215,17 +227,11 @@ class DeezerTool(object):
         return self.config.get('token', 'token')
 
     def processApiError(self, errorData):
-        message = errorData['message']
-        code = ' '+str(errorData['code']) if 'code' in errorData else ''
-        print('Error'+code+': '+message)
-        sys.exit()
+        code = errorData['code'] if 'code' in errorData else None
+        raise DeezerApiError(errorData['message'], code)
 
     def prepareResponse(self, response, responseType):
         response = json.loads(response.text)
-
-        # if debug:
-        #     pp.pprint(response)
-        #     sys.exit()
         
         if isinstance(response, bool):
             return response
@@ -433,15 +439,24 @@ class DeezerTool(object):
 
         return groups
 
+def handleExceptionOutput(e, template='{0}'):
+    if not DEBUG_MODE:
+        print(template.format(e))
+    else:
+        raise e
+
 if __name__ == '__main__':
-    config = Config(CONFIG_PATH)
-    auth = DeezerAuth()
 
-    dTool = DeezerTool(config, auth)
+    # DEBUG_MODE = True
 
-    # dTool.checkAndUpdateToken().removePlaylistByTitle('pls2')
+    try:
+        config = Config(CONFIG_PATH)
+        auth = DeezerAuth()
+        dTool = DeezerTool(config, auth)       
 
-    # dTool.checkAndUpdateToken().purgePlaylistByTitle('pls')        
+        dTool.checkAndUpdateToken().resetShuffledPlaylist('pls', ['работа', 'работа 2'])
 
-    dTool.checkAndUpdateToken().resetShuffledPlaylist('pls', ['работа', 'работа 2'])
-    
+    except DeezerApiError as e:
+        handleExceptionOutput(e)
+    except Exception as e:
+        handleExceptionOutput(e, 'Error: {0}')
