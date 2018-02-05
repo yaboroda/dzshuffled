@@ -14,7 +14,7 @@ import http.server
 import webbrowser
 import requests
 
-SCRIPT_VERSION = '0.5.7.0'
+SCRIPT_VERSION = '0.6.0.0'
 
 CONFIG_PATH = './config.ini'
 
@@ -513,16 +513,61 @@ def handleExceptionOutput(e, template='{0}'):
     else:
         raise e
 
+def printHelpAndExit(parser):
+    parser.print_help()
+    sys.exit()
+
+def buildCliParser():
+    parser = argparse.ArgumentParser(
+            description = 'This script will create playlist in your Deezer consisting of shuffled tracks from your other playlists. Pass config section name or number to create play list from it.'
+        )
+
+    parser.add_argument('section',
+            metavar = 'SECTION',
+            nargs='?', 
+            const='', 
+            default='',
+            help = 'name or number of config section. Pass -l argument to see full list'
+        )
+
+    parser.add_argument('-l', '--list',
+            action = 'store_const', 
+            const = True,
+            help = 'show full list of config sections to create playlist from, pass -v param to show info about them'
+        )
+
+    parser.add_argument('-v', '--verbous',
+            action = 'store_const', 
+            const = True,
+            help = 'if called with argument -l, show info about listed config sections'
+        )
+
+    parser.add_argument('-i', '--info', 
+            action = 'store_const', 
+            const = True,
+            help = 'show info about selected config section but not do anithing'
+        )
+
+    return parser
+
 if __name__ == '__main__':
 
     DEBUG_MODE = True
 
     try:
         config = DeezerConfig(CONFIG_PATH)
+        parser = buildCliParser()
+        args = parser.parse_args()
+
+        if not args.section and not args.list:
+            printHelpAndExit(parser)        
+
         auth = DeezerAuth()
         dTool = DeezerTool(config, auth)       
+        dTool.checkAndUpdateToken()
 
-        dTool.checkAndUpdateToken().doFromConfigByNumber(1)
+        if args.section:
+            dTool.doFromConfigByNumber(int(args.section))
 
     except DeezerApiError as e:
         handleExceptionOutput(e)
