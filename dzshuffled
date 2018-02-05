@@ -13,7 +13,7 @@ import http.server
 import webbrowser
 import requests
 
-SCRIPT_VERSION = '0.5.4.0'
+SCRIPT_VERSION = '0.5.4.1'
 
 CONFIG_PATH = './config.ini'
 
@@ -108,7 +108,7 @@ class DeezerAuth(object):
 
     def authorize(self):
         if not self.appId or not self.secret:
-            raise Exception('You cant get authorization token without app_id and secret. Fill it in config file or write there valid token.')
+            raise DeezerAuthException('You cant get authorization token without app_id and secret. Fill it in config file or write there valid token.')
         self.fetchCode()
         self.fetchToken()            
 
@@ -132,7 +132,7 @@ class DeezerAuth(object):
         if 'access_token' in response:
             self.token = response['access_token']
         else:
-            raise Exception('Cant get token from deezer')
+            raise DeezerAuthException('Cant get token from deezer')
 
     def checkToken(self):
         url = self.urlCheckToken.format(self.token)
@@ -144,12 +144,12 @@ class DeezerAuth(object):
             self.user = response
             return True
         else:
-            raise Exception('Cant check auth token')
+            raise DeezerAuthException('Cant check auth token')
 
     def fetchUser(self):
         # user fetchig on token check
         if not self.checkToken():
-            raise Exception('Cant fetch user info due failed token check')
+            raise DeezerAuthException('Cant fetch user info due failed token check')
 
     def getUser(self):
         if self.user is None:
@@ -182,15 +182,6 @@ class _AuthorizationHandler(http.server.BaseHTTPRequestHandler):
     def log_message(self, format, *args):
         pass
 
-class _Authorization(Exception):
-    def __init__(self, code):
-        self.code = code
-
-class DeezerApiError(Exception):
-    def __init__(self, message, code):
-        excMessage = 'Deezer API error {1}: {0}'.format(message, 'code '+str(code) if code else '')
-        super().__init__(excMessage)
-
 class DeezerTool(object):
     baseUrl = 'http://api.deezer.com'
     limitTracks = 1000
@@ -216,7 +207,7 @@ class DeezerTool(object):
         if self.checkToken():
             self.config.set('token', 'token', self.auth.getToken())
         else:
-            raise Exception('Cant verify new token')
+            raise DeezerToolException('Cant verify new token')
 
         return self
 
@@ -241,7 +232,7 @@ class DeezerTool(object):
 
         if responseType == 'list':
             if 'data' not in response:
-                raise Exception('Error occured on request to Deezer api')
+                raise DeezerToolException('Error occured on request to Deezer api')
 
             nextPages = []
             if 'next' in response:
@@ -253,7 +244,7 @@ class DeezerTool(object):
             return response
 
         else:
-            raise Exception('Unknown response type "'+responseType+'", it can be one of those: single, list')
+            raise DeezerToolException('Unknown response type "'+responseType+'", it can be one of those: single, list')
            
 
 
@@ -438,6 +429,21 @@ class DeezerTool(object):
             groups.append(self.getStringOfIds( itemsList[i:i+limit] ))
 
         return groups
+
+class _Authorization(Exception):
+    def __init__(self, code):
+        self.code = code
+
+class DeezerApiError(Exception):
+    def __init__(self, message, code):
+        excMessage = 'Deezer API error {1}: {0}'.format(message, 'code '+str(code) if code else '')
+        super(DeezerApiError, self).__init__(excMessage)
+
+class DeezerToolException(Exception):
+    pass
+
+class DeezerAuthException(Exception):
+    pass
 
 def handleExceptionOutput(e, template='{0}'):
     if not DEBUG_MODE:
