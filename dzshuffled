@@ -436,6 +436,27 @@ class DeezerTool(object):
 
         return groups
 
+    def doFromConfig(self, section):
+        if not re.search('^pl_', section):
+            raise DeezerToolException('Playlist config section name must begin with pl_')
+        
+        plConfig = self.config.get(section)
+
+        if 'title' not in plConfig or not plConfig['title']:
+            raise DeezerToolException('Playlist config section must contain title option')
+        else:
+            title = plConfig['title']
+
+        if 'source' not in plConfig or not plConfig['source']:
+            raise DeezerToolException('Playlist config section must contain source option')
+        else:
+            sourcePls = plConfig['source'].split(', ')
+        
+        limit = int(plConfig['limit']) if 'limit' in plConfig else None
+
+        self.resetShuffledPlaylist(title, sourcePls, limit)
+
+
 class _Authorization(Exception):
     def __init__(self, code):
         self.code = code
@@ -466,7 +487,7 @@ if __name__ == '__main__':
         auth = DeezerAuth()
         dTool = DeezerTool(config, auth)       
 
-        dTool.checkAndUpdateToken().resetShuffledPlaylist('pls', ['работа', 'работа 2'])
+        dTool.checkAndUpdateToken().doFromConfig('pl_example')
 
     except DeezerApiError as e:
         handleExceptionOutput(e)
