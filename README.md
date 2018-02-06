@@ -29,7 +29,7 @@ optional arguments:
   --version      show script version
 ```
 
-####default config file
+#### default config file
 Fill app_id and secret, token will be fetched by script  
 Web-server will be started on port from config to receive Deezer answer to authentication  
 
