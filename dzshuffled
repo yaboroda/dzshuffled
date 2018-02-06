@@ -21,9 +21,12 @@ import http.server
 import webbrowser
 import requests
 
-SCRIPT_VERSION = '0.7.1.0'
+SCRIPT_VERSION = '0.7.2.0'
 
-CONFIG_PATH = os.path.expanduser("~") + "/.config/dzshuffled/config.ini"
+if 'DZSHUFFLED_CONFIG_PATH' in os.environ:
+    CONFIG_PATH = os.environ['DZSHUFFLED_CONFIG_PATH']
+else:
+    CONFIG_PATH = os.path.expanduser("~") + "/.config/dzshuffled/config.ini"
 
 DEBUG_MODE = True
 
