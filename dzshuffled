@@ -13,6 +13,7 @@ import pprint
 import re
 import json
 import sys
+import os
 from random import shuffle
 import argparse
 
@@ -20,11 +21,11 @@ import http.server
 import webbrowser
 import requests
 
-SCRIPT_VERSION = '0.7.0.0'
+SCRIPT_VERSION = '0.7.1.0'
 
-CONFIG_PATH = './config.ini'
+CONFIG_PATH = os.path.expanduser("~") + "/.config/dzshuffled/config.ini"
 
-DEBUG_MODE = False
+DEBUG_MODE = True
 
 pp = pprint.PrettyPrinter(indent=4)
 
@@ -44,6 +45,7 @@ class Config(object):
         self.cfg['config'] = {'example_config': 'redeclare method setUpDefaultConfig to set up default config'}
 
     def createNewConfigFile(self):
+        os.makedirs(os.path.dirname(self.path), exist_ok=True)
         self.cfg = configparser.ConfigParser()
         self.setUpDefaultConfig()
         self.write()
