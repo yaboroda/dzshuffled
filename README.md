@@ -1,8 +1,8 @@
 # dzshuffled
 
-script is working on linux
-install nesessery libs for python and run script without parameters for help message
-example of scenario will be in config file
+script is working on linux  
+install nesessery libs for python and run script without parameters for help message  
+example of scenario will be in config file  
 
 ```sh
 $ ./dzshuffled
