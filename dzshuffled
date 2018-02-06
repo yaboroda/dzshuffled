@@ -21,7 +21,7 @@ import http.server
 import webbrowser
 import requests
 
-SCRIPT_VERSION = '0.7.2.0'
+SCRIPT_VERSION = '0.7.2.1'
 
 if 'DZSHUFFLED_CONFIG_PATH' in os.environ:
     CONFIG_PATH = os.environ['DZSHUFFLED_CONFIG_PATH']
@@ -530,7 +530,7 @@ def printHelpAndExit(parser):
 
 def buildCliParser():
     parser = argparse.ArgumentParser(
-            description = 'This script will create playlist in your Deezer consisting of shuffled tracks from your other playlists. Pass config section name or number to create play list from it. Pass -l or -lv to see all config sections.'
+            description = 'This script will create playlist in your Deezer consisting of shuffled tracks from your other playlists. Pass config section name or number to create play list from it. Pass -l or -lv to see all config sections. Default config directory is ~/.config/dzshuffled/config.ini but you can reassign it with DZSHUFFLED_CONFIG_PATH environment variable.'
         )
 
     parser.add_argument('section',
