@@ -21,7 +21,7 @@ import http.server
 import webbrowser
 import requests
 
-SCRIPT_VERSION = '0.7.3.0'
+SCRIPT_VERSION = '0.7.4.0'
 
 if 'DZSHUFFLED_CONFIG_PATH' in os.environ:
     CONFIG_PATH = os.environ['DZSHUFFLED_CONFIG_PATH']
@@ -458,12 +458,16 @@ class DeezerTool(object):
 
         return groups
 
-    def checkForValidScenarioName(self, section):
-        return bool(re.search('^pl_', section))
+    def checkForValidScenarioName(self, scenarioName, raiseException = False):
+        check = bool(re.search('^pl_', scenarioName))
+
+        if raiseException and not check:
+            raise DeezerToolException('Invalid scenario name: "{}"'.format(scenarioName))
+        else:
+            return check
 
     def execScenario(self, scenario):
-        if not self.checkForValidScenarioName(scenario):
-            raise DeezerToolException('Invalid scenario name: "{}"'.format(scenario))
+        self.checkForValidScenarioName(scenario, True)
         
         plConfig = self.config.get(scenario)
 
@@ -489,9 +493,23 @@ class DeezerTool(object):
 
         return scenarios
 
-    def execScenarioByNumber(self, n):
+    def getScenarioNameByIndex(self, n):
         scenarios = self.getListOfScenarios()
-        self.execScenario(scenarios[n])
+        if len(scenarios) > n:
+            return scenarios[n]
+        else:
+            raise DeezerToolException('There is no scenario number {0}. Max number is {1}'.format(n, len(scenarios)-1))
+
+    def getScenarioIndexByName(self, scenario):
+        scenarios = self.getListOfScenarios()
+        if scenario in scenarios:
+            return scenarios.index(scenario)
+        else:
+            raise DeezerToolException('There is no scenario "{}"'.format(scenario))
+
+    def getScenarioConfig(self, scenario):
+        if self.checkForValidScenarioName(scenario, True):
+            return self.config.get(scenario)
 
     def ridOfDoubleTracks(self):
         self.tracks = self.ridOfDoublesInListOfDict(self.tracks)
@@ -578,23 +596,24 @@ def printInfoAboutScenario(number, name, data = None):
     else:
         print('[{0}] {1}'.format(number, name))
 
-def printListScenarios(config, sectionsList, verbosity=None):
-    for i in range(len(sectionsList)):
+def printListScenarios(dTool, verbosity=None):
+    scenarios = dTool.getListOfScenarios()
+    for i in range(len(scenarios)):
         if verbosity:
-            printInfoAboutScenario(i, sectionsList[i], config.get(sectionsList[i]))
+            printInfoAboutScenario(i, scenarios[i], dTool.getScenarioConfig(scenarios[i]))
         else:
-            printInfoAboutScenario(i, sectionsList[i])
+            printInfoAboutScenario(i, scenarios[i])
 
-def processCliScenarioCall(scenarioInput, config, sectionsList, dTool, infoFlag=None):
+def processCliScenarioCall(scenarioInput, dTool, infoFlag=None):
     if scenarioInput.isnumeric():
         scenarioIndex = int(scenarioInput)
-        scenarioName = sectionsList[scenarioIndex]
+        scenarioName = dTool.getScenarioNameByIndex(scenarioIndex)
     else:
         scenarioName = scenarioInput
-        scenarioIndex = sectionsList.index(scenarioName)
+        scenarioIndex = dTool.getScenarioIndexByName(scenarioName)
 
     if args.info:
-        printInfoAboutScenario(scenarioIndex, scenarioName, config.get(scenarioName))
+        printInfoAboutScenario(scenarioIndex, scenarioName, dTool.getScenarioConfig(scenarioName))
     else:
         dTool.checkAndUpdateToken()
         dTool.execScenario(scenarioName)
@@ -620,11 +639,11 @@ if __name__ == '__main__':
         scenariosList = dTool.getListOfScenarios()
 
         if args.list:
-            printListScenarios(config, scenariosList, args.verbous)
+            printListScenarios(dTool, args.verbous)
             sys.exit()
 
         if args.scenario:
-            processCliScenarioCall(args.scenario, config, scenariosList, dTool, args.info)
+            processCliScenarioCall(args.scenario, dTool, args.info)
             sys.exit()
 
     except DeezerApiError as e:
