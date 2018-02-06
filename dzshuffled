@@ -21,7 +21,7 @@ import http.server
 import webbrowser
 import requests
 
-SCRIPT_VERSION = '0.7.4.0'
+SCRIPT_VERSION = '0.9.0.0'
 
 if 'DZSHUFFLED_CONFIG_PATH' in os.environ:
     CONFIG_PATH = os.environ['DZSHUFFLED_CONFIG_PATH']
