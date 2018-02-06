@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+"""
+author:     yaBoroda
+github:     https://github.com/yaboroda/dzshuffled
+email:      yarboroda@gmail.com
+"""
+
 import configparser
 import os
 import pprint
@@ -14,7 +20,7 @@ import http.server
 import webbrowser
 import requests
 
-SCRIPT_VERSION = '0.6.0.0'
+SCRIPT_VERSION = '0.6.1.0'
 
 CONFIG_PATH = './config.ini'
 
@@ -548,6 +554,12 @@ def buildCliParser():
             help = 'show info about selected config section but not do anithing'
         )
 
+    parser.add_argument('--version', 
+            action = 'store_const', 
+            const = True,
+            help = 'show script version'
+        )
+
     return parser
 
 if __name__ == '__main__':
@@ -559,15 +571,35 @@ if __name__ == '__main__':
         parser = buildCliParser()
         args = parser.parse_args()
 
+        if args.version:
+            print('version: {0}'.format(SCRIPT_VERSION))
+            sys.exit()
+
         if not args.section and not args.list:
             printHelpAndExit(parser)        
 
         auth = DeezerAuth()
-        dTool = DeezerTool(config, auth)       
-        dTool.checkAndUpdateToken()
+        dTool = DeezerTool(config, auth)  
+        sectionsConfig = dTool.getAllPlaylistConfigSections()
+
+        if args.list:
+            for i in range(len(sectionsConfig)):
+                if args.verbous:
+                    print('[{0}]'.format(i))
+                    pp.pprint(config.get(sectionsConfig[i]))
+                else:
+                    print('{0}: {1}'.format(i, sectionsConfig[i]))
+            sys.exit()
 
         if args.section:
-            dTool.doFromConfigByNumber(int(args.section))
+            if args.info:
+                i = int(args.section)
+                print('[{0}]'.format(i))
+                pp.pprint(config.get(sectionsConfig[i]))
+            else:
+                dTool.checkAndUpdateToken()
+                dTool.doFromConfigByNumber(int(args.section))
+            sys.exit()
 
     except DeezerApiError as e:
         handleExceptionOutput(e)
