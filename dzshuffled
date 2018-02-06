@@ -21,7 +21,7 @@ import http.server
 import webbrowser
 import requests
 
-SCRIPT_VERSION = '0.7.2.2'
+SCRIPT_VERSION = '0.7.3.0'
 
 if 'DZSHUFFLED_CONFIG_PATH' in os.environ:
     CONFIG_PATH = os.environ['DZSHUFFLED_CONFIG_PATH']
@@ -202,6 +202,7 @@ class _AuthorizationHandler(http.server.BaseHTTPRequestHandler):
 
 class DeezerTool(object):
     baseUrl = 'http://api.deezer.com'
+    validScenarioTypes = ['shuffled']
     limitTracks = 1000
     limitResultsPerRequest = 500
     limitItemsToDeleteAtOneRequest = 500
@@ -457,22 +458,25 @@ class DeezerTool(object):
 
         return groups
 
-    def checkForValidPlaylistConfigSectionName(self, section):
+    def checkForValidScenarioName(self, section):
         return bool(re.search('^pl_', section))
 
-    def doFromConfig(self, section):
-        if not self.checkForValidPlaylistConfigSectionName(section):
-            raise DeezerToolException('Playlist config section name must begin with pl_')
+    def execScenario(self, scenario):
+        if not self.checkForValidScenarioName(scenario):
+            raise DeezerToolException('Invalid scenario name: "{}"'.format(scenario))
         
-        plConfig = self.config.get(section)
+        plConfig = self.config.get(scenario)
+
+        if 'type' not in plConfig or not plConfig['type'] or plConfig['type'] not in self.validScenarioTypes:
+            raise DeezerToolException('Scenario config section must contain valid type option')
 
         if 'title' not in plConfig or not plConfig['title']:
-            raise DeezerToolException('Playlist config section must contain title option')
+            raise DeezerToolException('Scenario config section must contain title option')
         else:
             title = plConfig['title']
 
         if 'source' not in plConfig or not plConfig['source']:
-            raise DeezerToolException('Playlist config section must contain source option')
+            raise DeezerToolException('Scenario config section must contain source option')
         else:
             sourcePls = plConfig['source'].split(', ')
         
@@ -480,14 +484,14 @@ class DeezerTool(object):
 
         self.resetShuffledPlaylist(title, sourcePls, limit)
 
-    def getAllPlaylistConfigSections(self):
-        sections = [key for key, val in self.config.get().items() if self.checkForValidPlaylistConfigSectionName(key)]
+    def getListOfScenarios(self):
+        scenarios = [key for key, val in self.config.get().items() if self.checkForValidScenarioName(key)]
 
-        return sections
+        return scenarios
 
-    def doFromConfigByNumber(self, n):
-        sections = self.getAllPlaylistConfigSections()
-        self.doFromConfig(sections[n])
+    def execScenarioByNumber(self, n):
+        scenarios = self.getListOfScenarios()
+        self.execScenario(scenarios[n])
 
     def ridOfDoubleTracks(self):
         self.tracks = self.ridOfDoublesInListOfDict(self.tracks)
@@ -530,33 +534,33 @@ def printHelpAndExit(parser):
 
 def buildCliParser():
     parser = argparse.ArgumentParser(
-            description = 'This script will create playlist in your Deezer consisting of shuffled tracks from your other playlists. Pass config section name or number to create play list from it. Pass -l or -lv to see all config sections. Default config directory is ~/.config/dzshuffled/config.ini but you can reassign it with DZSHUFFLED_CONFIG_PATH environment variable.'
+            description = 'This script will create playlist in your Deezer library consisting of shuffled tracks from your other playlists. Pass scenario name or number to create playlist from it. Pass -l or -lv to see all scenarios. Scenarios sets up in config wich by default in ~/.config/dzshuffled/config.ini but you can reassign it with DZSHUFFLED_CONFIG_PATH environment variable.'
         )
 
-    parser.add_argument('section',
-            metavar = 'SECTION',
+    parser.add_argument('scenario',
+            metavar = 'SCENARIO',
             nargs='?', 
             const='', 
             default='',
-            help = 'name or number of config section. Pass -l argument to see full list'
+            help = 'name or number of scenario. Pass -l argument to see full list'
         )
 
     parser.add_argument('-l', '--list',
             action = 'store_const', 
             const = True,
-            help = 'show full list of config sections to create playlist from, pass -v param to show info about them'
+            help = 'show full list of scenarios to create playlist from, pass -v param to show info about them'
         )
 
     parser.add_argument('-v', '--verbous',
             action = 'store_const', 
             const = True,
-            help = 'if called with argument -l, show info about listed config sections'
+            help = 'if called with argument -l, show info about listed scenarios'
         )
 
     parser.add_argument('-i', '--info', 
             action = 'store_const', 
             const = True,
-            help = 'show info about selected config section but not do anithing'
+            help = 'show info about selected scenario but not do anithing'
         )
 
     parser.add_argument('--version', 
@@ -567,33 +571,33 @@ def buildCliParser():
 
     return parser
 
-def printInfoAboutPlaylistConfig(number, name, data = None):
+def printInfoAboutScenario(number, name, data = None):
     if data:
         print('[{0}] {1}'.format(number, name))
         pp.pprint(data)
     else:
         print('[{0}] {1}'.format(number, name))
 
-def printListOfPlaylistConfigs(config, sectionsList, verbosity=None):
+def printListScenarios(config, sectionsList, verbosity=None):
     for i in range(len(sectionsList)):
         if verbosity:
-            printInfoAboutPlaylistConfig(i, sectionsList[i], config.get(sectionsList[i]))
+            printInfoAboutScenario(i, sectionsList[i], config.get(sectionsList[i]))
         else:
-            printInfoAboutPlaylistConfig(i, sectionsList[i])
+            printInfoAboutScenario(i, sectionsList[i])
 
-def processCliSectionCall(sectionInput, config, sectionsList, dTool, infoFlag=None):
-    if sectionInput.isnumeric():
-        sectionIndex = int(sectionInput)
-        sectionName = sectionsList[sectionIndex]
+def processCliScenarioCall(scenarioInput, config, sectionsList, dTool, infoFlag=None):
+    if scenarioInput.isnumeric():
+        scenarioIndex = int(scenarioInput)
+        scenarioName = sectionsList[scenarioIndex]
     else:
-        sectionName = sectionInput
-        sectionIndex = sectionsList.index(sectionName)
+        scenarioName = scenarioInput
+        scenarioIndex = sectionsList.index(scenarioName)
 
     if args.info:
-        printInfoAboutPlaylistConfig(sectionIndex, sectionName, config.get(sectionName))
+        printInfoAboutScenario(scenarioIndex, scenarioName, config.get(scenarioName))
     else:
         dTool.checkAndUpdateToken()
-        dTool.doFromConfig(sectionName)
+        dTool.execScenario(scenarioName)
 
 if __name__ == '__main__':
 
@@ -608,19 +612,19 @@ if __name__ == '__main__':
             print('version: {0}'.format(SCRIPT_VERSION))
             sys.exit()
 
-        if not args.section and not args.list:
+        if not args.scenario and not args.list:
             printHelpAndExit(parser)        
 
         auth = DeezerAuth()
         dTool = DeezerTool(config, auth)  
-        sectionsList = dTool.getAllPlaylistConfigSections()
+        scenariosList = dTool.getListOfScenarios()
 
         if args.list:
-            printListOfPlaylistConfigs(config, sectionsList, args.verbous)
+            printListScenarios(config, scenariosList, args.verbous)
             sys.exit()
 
-        if args.section:
-            processCliSectionCall(args.section, config, sectionsList, dTool, args.info)
+        if args.scenario:
+            processCliScenarioCall(args.scenario, config, scenariosList, dTool, args.info)
             sys.exit()
 
     except DeezerApiError as e:
