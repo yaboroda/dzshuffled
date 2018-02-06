@@ -4,6 +4,8 @@ script is working on linux
 install nesessery libs for python and run script without parameters for help message  
 example of scenario will be in config file  
 
+proper readme will be written later  
+
 ```sh
 $ ./dzshuffled
 
@@ -25,6 +27,28 @@ optional arguments:
   -v, --verbous  if called with argument -l, show info about listed scenarios
   -i, --info     show info about selected scenario but not do anithing
   --version      show script version
+```
 
-proper readme will be written later
+####default config file
+Fill app_id and secret, token will be fetched by script  
+Web-server will be started on port from config to receive Deezer answer to authentication  
+
+pl_example section is scenario to make playlist named 'Example shuffled playlist' with tracks of playlists from source option.  
+
+you can write as many scenarios as you like, but sections names must begin with pl_  
+
+```ini
+[auth]
+app_id = 
+secret = 
+port = 8090
+
+[token]
+token = 
+
+[pl_example]
+title = Example shuffled playlist
+type = shuffled
+source = playlist 1, playlist 2
+limit = 1000
 ```
