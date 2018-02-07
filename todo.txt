@@ -1,5 +1,3 @@
- - prameters type expectations
- - comments
  - readme.md
  - checking playlist titles from scenario
  - different scenario types?
