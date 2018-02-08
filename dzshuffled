@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """
 author:     yaBoroda
@@ -16,32 +15,32 @@ import sys
 from random import shuffle
 import argparse
 from typing import Dict, List, Union
-
 import http.server
 import webbrowser
 import requests
 
 SCRIPT_VERSION = '0.9.1.0'
+DEBUG_MODE = False
+pp = pprint.PrettyPrinter(indent=4)
 
+"""If environment var defined, set CONFIG_PATH from it,
+else set to ~/.config/dzshuffled/config.ini
+"""
 if 'DZSHUFFLED_CONFIG_PATH' in os.environ:
     CONFIG_PATH = os.environ['DZSHUFFLED_CONFIG_PATH']
 else:
-    CONFIG_PATH = os.path.expanduser("~") + "/.config/dzshuffled/config.ini"
-
-DEBUG_MODE = False
-
-pp = pprint.PrettyPrinter(indent=4)
+    CONFIG_PATH = (os.path.expanduser("~") 
+                   + "/.config/dzshuffled/config.ini")
 
 class Config(object):
-    """
-    manage info from config .ini file
-    """
+    """Manage info from config .ini file."""
 
-    def __init__(self, path):
+    def __init__(self, path:str):
+        """Read file from path or create new one.
+        
+        Keyword arguments:
+        path -- path to config file
         """
-        path - path to config file
-        """
-
         self.path = path
 
         if not os.path.isfile(path):
@@ -52,37 +51,38 @@ class Config(object):
             self.read()
 
     def set_up_default_config(self):
-        self.cfg['config'] = {'example_config': 'redeclare method set_up_default_config to set up default config'}
+        """Sets up default config data,
+        it should be redeclared in subclass.
+        """
+        self.cfg['config'] = {'example_config': 'example_value'}
 
     def create_new_config_file(self):
+        """Create new config file from default config."""
         os.makedirs(os.path.dirname(self.path), exist_ok=True)
         self.cfg = configparser.ConfigParser()
         self.set_up_default_config()
         self.write()
 
     def write(self):
-        """
-        write current config to file
-        """
-
+        """Write current config to file."""
         with open(self.path, 'w') as configfile:
             self.cfg.write(configfile)
 
     def read(self):
-        """
-        read config from file, replacing current data
-        """
-
+        """Read config from file, replacing current data."""
         self.cfg = configparser.ConfigParser()
         self.cfg.read(self.path)
     
-    def get(self, section=None, option=None):
-        """
-        get info from config
+    def get(self, section:str=None, option:str=None):
+        """Get info from config.
+        
         if option is None, will return section as dictionary
         if section is None, will return whole config as dictionary
-        """
 
+        Keyword arguments:
+        section -- section name of config (default None)
+        option -- option name of config (default None)
+        """
         if option is None and section is None:
             return self.get_all()
         elif option is None:
@@ -91,10 +91,7 @@ class Config(object):
             return self.get_option(section, option)
 
     def get_all(self):
-        """
-        will return whole config as dictionary
-        """
-
+        """Will return whole config as dictionary."""
         data = {}
         for cfg_section in self.cfg.sections():
             data[cfg_section] = {}
@@ -102,24 +99,24 @@ class Config(object):
                 data[cfg_section][key] = val
         return data
 
-    def get_section(self, section):
-        """
-        will return section data as dictionary
-        """
+    def get_section(self, section:str) -> Dict:
+        """Will return section data as dictionary."""
         data = {}
         for key, val in self.cfg.items(section):
             data[key] = val
         return data
 
-    def get_option(self, section, option):
-        """
-        will return value of config option in section
-        """
+    def get_option(self, section:str, option:str):
+        """Will return value of config option in section."""
         return self.cfg.get(section, option)
 
-    def set(self, section, option, value):
-        """
-        set option value and write change to config file
+    def set(self, section:str, option:str, value):
+        """Set option value and write change to config file.
+
+        Keyword arguments:
+        section -- section name of config (default None)
+        option -- option name of config (default None)
+        value -- value to put in option
         """
         if not self.cfg.has_section(section):
             self.cfg.add_section(section)
@@ -128,23 +125,47 @@ class Config(object):
         self.write()
 
     def sections(self):
-        """
-        get list of sections in config
-        """
+        """Get list of sections in config."""
         return self.cfg.sections()
 
 
 class DeezerConfig(Config):
+    """Config class for DeezerTool object"""
 
     def set_up_default_config(self):
-        self.cfg['auth'] = {'app_id': '', 'secret': '', 'port': '8090'}
-        self.cfg['token'] = {'token': ''}
-        self.cfg['pl_example'] = {'title': 'Example shuffled playlist', 'type': 'shuffled', 'source': 'playlist 1, playlist 2', 'limit': 1000}
+        """Sets up default config data."""
+        self.cfg['auth'] = {
+            'app_id': '', 
+            'secret': '', 
+            'port': '8090'
+        }
+        self.cfg['token'] = {
+            'token': ''
+        }
+        self.cfg['pl_example'] = {
+            'title': 'Example shuffled playlist', 
+            'type': 'shuffled', 
+            'source': 
+            'playlist 1, playlist 2', 
+            'limit': 1000
+        }
 
 
 class DeezerAuth(object):
-    URL_AUTH = 'https://connect.deezer.com/oauth/auth.php?app_id={0}&redirect_uri={1}&perms=basic_access,manage_library,delete_library'
-    ULR_TOKEN = 'https://connect.deezer.com/oauth/access_token.php?app_id={0}&secret={1}&code={2}&output=json'
+    """Authorization in Deezer.
+
+    1. Fetching auth code for app with asking you for permission
+    For getting answer, will be started web server on port from config.
+
+    2. With code fetching temporary auth token. This token you must
+    attach with each request to Deezer API
+    """
+
+    URL_AUTH = ('https://connect.deezer.com/oauth/auth.php'
+                +'?app_id={0}&redirect_uri={1}'
+                +'&perms=basic_access,manage_library,delete_library')
+    ULR_TOKEN = ('https://connect.deezer.com/oauth/access_token.php'
+                 +'?app_id={0}&secret={1}&code={2}&output=json')
     URL_REDIRECT = 'http://localhost:{0}/authfinish'
     URL_CHECK_TOKEN = 'http://api.deezer.com/user/me?access_token={0}'
 
@@ -156,11 +177,17 @@ class DeezerAuth(object):
         return self.token
     
     def set_params(self, params:Dict, token=''):
-        """
-        port - on this port will be working web server to recieve auth answer
-        secret - secret of your Deezer app
-        app_id - id of your Deezer app
-        token - auth token, if empty or invalid, it will be fetched
+        """Set parameters for authorization.
+
+        If you pass in token, it will be used instead of retriving new.
+
+        Keyword arguments:
+        params -- dictionary with obligatory keys:
+            port - on this port will be started web server
+            secret - secret of your Deezer app
+            app_id - id of your Deezer app
+        token -- auth token, if empty or invalid, 
+            it will be fetched (default '')
         """
         self.port = int(params['port'])
         self.secret = params['secret']
@@ -168,22 +195,22 @@ class DeezerAuth(object):
         self.token = token
 
     def set_token(self, token):
+        """Set auth token to use it."""
         self.token = token
 
     def authorize(self):
-        """
-        fetch auth app code, asking you for permission
-        then fetch temporary auth token
-        """
+        """Authorize and get token."""
         if not self.app_id or not self.secret:
-            raise DeezerAuthException('You cant get authorization token without app_id and secret. Fill it in config file or write there valid token.')
+            raise DeezerAuthException(
+                'You cant get authorization token without app_id '
+                +'and secret. Fill it in config file or write there '
+                +'valid token.'
+            )
         self.fetch_code()
         self.fetch_token()            
 
     def fetch_code(self):
-        """
-        fetch auth app code, asking you for permission
-        """
+        """Fetch auth app code, it will be used to get token."""
         redirect = self.URL_REDIRECT.format(self.port)
         webbrowser.open(self.URL_AUTH.format(self.app_id, redirect))
         self.start_server()
@@ -194,15 +221,11 @@ class DeezerAuth(object):
             self.code = auth.code
 
     def start_server(self):
-        """
-        start web server to listen for response with auth code
-        """
+        """Start web server to listen for response with auth code."""
         self.server = _AuthorizationServer('localhost', self.port)
 
     def fetch_token(self):
-        """
-        fetch temporary auth token if you has auth code
-        """
+        """Fetch temporary auth token if you has auth code."""
         url = self.ULR_TOKEN.format(self.app_id, self.secret, self.code)        
         response = json.loads(requests.get(url).text)
 
@@ -211,10 +234,8 @@ class DeezerAuth(object):
         else:
             raise DeezerAuthException('Cant get token from deezer')
 
-    def check_token(self) -> bool:
-        """
-        check auth token, fetching user info
-        """
+    def check_token(self):
+        """Check auth token, fetching user info, return bool"""
         url = self.URL_CHECK_TOKEN.format(self.token)
         response = json.loads(requests.get(url).text)
 
