@@ -13,7 +13,6 @@ import pprint
 import re
 import json
 import sys
-import os
 from random import shuffle
 import argparse
 from typing import Dict, List, Union
@@ -46,19 +45,19 @@ class Config(object):
         self.path = path
 
         if not os.path.isfile(path):
-            self.createNewConfigFile()
+            self.create_new_config_file()
             print('New config file was created in {}'.format(path))
             sys.exit()
         else:
             self.read()
 
-    def setUpDefaultConfig(self):
-        self.cfg['config'] = {'example_config': 'redeclare method setUpDefaultConfig to set up default config'}
+    def set_up_default_config(self):
+        self.cfg['config'] = {'example_config': 'redeclare method set_up_default_config to set up default config'}
 
-    def createNewConfigFile(self):
+    def create_new_config_file(self):
         os.makedirs(os.path.dirname(self.path), exist_ok=True)
         self.cfg = configparser.ConfigParser()
-        self.setUpDefaultConfig()
+        self.set_up_default_config()
         self.write()
 
     def write(self):
@@ -85,13 +84,13 @@ class Config(object):
         """
 
         if option is None and section is None:
-            return self.getAll()
+            return self.get_all()
         elif option is None:
-            return self.getSection(section)
+            return self.get_section(section)
         else:
-            return self.getOption(section, option)
+            return self.get_option(section, option)
 
-    def getAll(self):
+    def get_all(self):
         """
         will return whole config as dictionary
         """
@@ -103,7 +102,7 @@ class Config(object):
                 data[cfg_section][key] = val
         return data
 
-    def getSection(self, section):
+    def get_section(self, section):
         """
         will return section data as dictionary
         """
@@ -112,7 +111,7 @@ class Config(object):
             data[key] = val
         return data
 
-    def getOption(self, section, option):
+    def get_option(self, section, option):
         """
         will return value of config option in section
         """
@@ -137,23 +136,26 @@ class Config(object):
 
 class DeezerConfig(Config):
 
-    def setUpDefaultConfig(self):
+    def set_up_default_config(self):
         self.cfg['auth'] = {'app_id': '', 'secret': '', 'port': '8090'}
         self.cfg['token'] = {'token': ''}
         self.cfg['pl_example'] = {'title': 'Example shuffled playlist', 'type': 'shuffled', 'source': 'playlist 1, playlist 2', 'limit': 1000}
 
 
 class DeezerAuth(object):
-    urlAuth = 'https://connect.deezer.com/oauth/auth.php?app_id={0}&redirect_uri={1}&perms=basic_access,manage_library,delete_library'
-    urlToken = 'https://connect.deezer.com/oauth/access_token.php?app_id={0}&secret={1}&code={2}&output=json'
-    urlRedirect = 'http://localhost:{0}/authfinish'
-    urlCheckToken = 'http://api.deezer.com/user/me?access_token={0}'
-    user = None
+    URL_AUTH = 'https://connect.deezer.com/oauth/auth.php?app_id={0}&redirect_uri={1}&perms=basic_access,manage_library,delete_library'
+    ULR_TOKEN = 'https://connect.deezer.com/oauth/access_token.php?app_id={0}&secret={1}&code={2}&output=json'
+    URL_REDIRECT = 'http://localhost:{0}/authfinish'
+    URL_CHECK_TOKEN = 'http://api.deezer.com/user/me?access_token={0}'
 
-    def getToken(self):
+    def __init__(self):
+        self.user = None
+        self.token = ''
+
+    def get_token(self):
         return self.token
     
-    def setParams(self, params:Dict, token=''):
+    def set_params(self, params:Dict, token=''):
         """
         port - on this port will be working web server to recieve auth answer
         secret - secret of your Deezer app
@@ -162,10 +164,10 @@ class DeezerAuth(object):
         """
         self.port = int(params['port'])
         self.secret = params['secret']
-        self.appId = params['app_id']
+        self.app_id = params['app_id']
         self.token = token
 
-    def setToken(self, token):
+    def set_token(self, token):
         self.token = token
 
     def authorize(self):
@@ -173,35 +175,35 @@ class DeezerAuth(object):
         fetch auth app code, asking you for permission
         then fetch temporary auth token
         """
-        if not self.appId or not self.secret:
+        if not self.app_id or not self.secret:
             raise DeezerAuthException('You cant get authorization token without app_id and secret. Fill it in config file or write there valid token.')
-        self.fetchCode()
-        self.fetchToken()            
+        self.fetch_code()
+        self.fetch_token()            
 
-    def fetchCode(self):
+    def fetch_code(self):
         """
         fetch auth app code, asking you for permission
         """
-        redirect = self.urlRedirect.format(self.port)
-        webbrowser.open(self.urlAuth.format(self.appId, redirect))
-        self.startServer()
+        redirect = self.URL_REDIRECT.format(self.port)
+        webbrowser.open(self.URL_AUTH.format(self.app_id, redirect))
+        self.start_server()
         try:
             while True:
                 self.server.handle_request()
         except _Authorization as auth:
             self.code = auth.code
 
-    def startServer(self):
+    def start_server(self):
         """
         start web server to listen for response with auth code
         """
         self.server = _AuthorizationServer('localhost', self.port)
 
-    def fetchToken(self):
+    def fetch_token(self):
         """
         fetch temporary auth token if you has auth code
         """
-        url = self.urlToken.format(self.appId, self.secret, self.code)        
+        url = self.ULR_TOKEN.format(self.app_id, self.secret, self.code)        
         response = json.loads(requests.get(url).text)
 
         if 'access_token' in response:
@@ -209,11 +211,11 @@ class DeezerAuth(object):
         else:
             raise DeezerAuthException('Cant get token from deezer')
 
-    def checkToken(self) -> bool:
+    def check_token(self) -> bool:
         """
         check auth token, fetching user info
         """
-        url = self.urlCheckToken.format(self.token)
+        url = self.URL_CHECK_TOKEN.format(self.token)
         response = json.loads(requests.get(url).text)
 
         if 'error' in response:
@@ -224,14 +226,14 @@ class DeezerAuth(object):
         else:
             raise DeezerAuthException('Cant check auth token')
 
-    def fetchUser(self):
+    def fetch_user(self):
         # user fetchig on token check
-        if not self.checkToken():
+        if not self.check_token():
             raise DeezerAuthException('Cant fetch user info due failed token check')
 
-    def getUser(self) -> Dict:
+    def get_user(self) -> Dict:
         if self.user is None:
-            self.fetchUser()
+            self.fetch_user()
 
         return self.user
 
@@ -261,55 +263,54 @@ class _AuthorizationHandler(http.server.BaseHTTPRequestHandler):
         pass
 
 class DeezerTool(object):
-    baseUrl = 'http://api.deezer.com'
-    validScenarioTypes = ['shuffled']
-    limitTracks = 1000
-    limitResultsPerRequest = 500
-    limitItemsToDeleteAtOneRequest = 500
-
-    playlists = []
-    tracks = []
+    BASE_URL = 'http://api.deezer.com'
+    VALID_SCENARIO_TYPES = ['shuffled']
+    LIMIT_TRACKS = 1000
+    LIMIT_RESULTS_PER_REQUEST = 500
+    LIMIT_ITEMS_DELETE_PER_ONE_REQUEST = 500
 
     def __init__(self, config:DeezerConfig, auth:DeezerAuth):
+        self.playlists = []
+        self.tracks = []
         self.config = config
         self.auth = auth
-        self.auth.setParams(config.get('auth'), config.get('token', 'token'))
+        self.auth.set_params(config.get('auth'), config.get('token', 'token'))
 
-    def checkAndUpdateToken(self) -> 'DeezerTool':
-        if not self.checkToken():
-            self.updateToken()
+    def check_and_update_token(self) -> 'DeezerTool':
+        if not self.check_token():
+            self.update_token()
         return self
 
-    def updateToken(self) -> 'DeezerTool':
+    def update_token(self) -> 'DeezerTool':
         """
         authorize in Deezer and write new token in config file
         """
         self.auth.authorize()
 
-        if self.checkToken():
-            self.config.set('token', 'token', self.auth.getToken())
+        if self.check_token():
+            self.config.set('token', 'token', self.auth.get_token())
         else:
             raise DeezerToolException('Cant verify new token')
 
         return self
 
-    def checkToken(self) -> bool:
-        return self.auth.checkToken()
+    def check_token(self) -> bool:
+        return self.auth.check_token()
 
-    def getToken(self) -> str:
+    def get_token(self) -> str:
         return self.config.get('token', 'token')
 
-    def processApiError(self, errorData:Dict):
+    def process_api_error(self, error_data:Dict):
         """
         raise exception by error sesponse from Deezer
         """
-        code = errorData['code'] if 'code' in errorData else None
-        raise DeezerApiError(errorData['message'], code)
+        code = error_data['code'] if 'code' in error_data else None
+        raise DeezerApiError(error_data['message'], code)
 
-    def prepareResponse(self, response, responseType:str) -> Union[bool, Dict]:
+    def prepare_response(self, response, response_type:str) -> Union[bool, Dict]:
         """
         get data from response object
-        responseType - 'list' or 'single'
+        response_type - 'list' or 'single'
         if 'list' then getting all paginated data with additional requests
         """
         response = json.loads(response.text)
@@ -318,95 +319,95 @@ class DeezerTool(object):
             return response
 
         if 'error' in response:
-            return self.processApiError(response['error'])
+            return self.process_api_error(response['error'])
 
-        if responseType == 'list':
+        if response_type == 'list':
             if 'data' not in response:
                 raise DeezerToolException('Error occured on request to Deezer api')
 
             nextPages = []
             if 'next' in response:
-                nextPages = self.apiGetStrict(response['next'], 'list')
+                nextPages = self.api_get_strict(response['next'], 'list')
 
             return response['data'] + nextPages
 
-        elif responseType == 'single':
+        elif response_type == 'single':
             return response
 
         else:
-            raise DeezerToolException('Unknown response type "'+responseType+'", it can be either single or list')
+            raise DeezerToolException('Unknown response type "'+response_type+'", it can be either single or list')
            
 
 
-    def addRequiredParams(self, params:Dict) -> Dict:
+    def add_required_params(self, params:Dict) -> Dict:
         """
         add token and limit to requests param
         """
         if 'access_token' not in params:
-            params['access_token'] = self.getToken()
+            params['access_token'] = self.get_token()
 
         if 'limit' not in params:
-            params['limit'] = self.limitResultsPerRequest
+            params['limit'] = self.LIMIT_RESULTS_PER_REQUEST
 
         return params
 
 
-    def apiGet(self, uri:str, responseType:str, params:Dict = {}) -> Union[bool, Dict]:
+    def api_get(self, uri:str, response_type:str, params:Dict = {}) -> Union[bool, Dict]:
         """
         send GET request to Deezer API
         uri - address without domain
-        responseType - 'single' or 'list'
+        response_type - 'single' or 'list'
         """
-        params = self.addRequiredParams(params)
-        response = requests.get(self.baseUrl + uri, params)
-        return self.prepareResponse(response, responseType)
+        params = self.add_required_params(params)
+        response = requests.get(self.BASE_URL + uri, params)
+        return self.prepare_response(response, response_type)
 
-    def apiGetStrict(self, url:str, responseType:str) -> Union[bool, Dict]:
+    def api_get_strict(self, url:str, response_type:str) -> Union[bool, Dict]:
         """
         send GET request strictly by url, wich include domain and all parameters
-        responseType - 'single' or 'list'
+        response_type - 'single' or 'list'
         """
         response = requests.get(url)
-        return self.prepareResponse(response, responseType)
+        return self.prepare_response(response, response_type)
 
-    def apiPost(self, uri:str, responseType:str, params:Dict={}) -> Union[bool, Dict]:
+    def api_post(self, uri:str, response_type:str, params:Dict={}) -> Union[bool, Dict]:
         """
         send POST request to Deezer API
         uri - address without domain
-        responseType - 'single' or 'list'
+        response_type - 'single' or 'list'
         """
-        params = self.addRequiredParams(params)
-        response = requests.post(self.baseUrl + uri, params)
-        return self.prepareResponse(response, responseType)
+        params = self.add_required_params(params)
+        response = requests.post(self.BASE_URL + uri, params)
+        return self.prepare_response(response, response_type)
 
-    def apiDelete(self, uri, responseType, params={}) -> Union[bool, Dict]:
+    def api_delete(self, uri, response_type, params={}) -> Union[bool, Dict]:
         """
         send DELETE request to Deezer API
         uri - address without domain
-        responseType - 'single' or 'list'
+        response_type - 'single' or 'list'
         """
-        params = self.addRequiredParams(params)
+        params = self.add_required_params(params)
         uri += '?access_token={0}'.format(params.pop('access_token'))
 
         for p, val in params.items():
             uri += '&{0}={1}'.format(p, val)
         
-        response = requests.delete(self.baseUrl + uri)
-        return self.prepareResponse(response, responseType)
+        response = requests.delete(self.BASE_URL + uri)
+        return self.prepare_response(response, response_type)
 
-    def getPlaylists(self) -> List:
+    def get_playlists(self) -> List:
         """
         get playlists info stored in self.playlists
         """
         return self.playlists
 
-    def getTracks(self) -> List:
+    def get_tracks(self) -> List:
         """
         get tracks info stored in self.tracks
         """
         return self.tracks
 
-    def filterPlaylistsByTitles(self, titles:Union[List, str]) -> 'DeezerTool':
+    def filter_playlists_by_titles(self, titles:Union[List, str]) -> 'DeezerTool':
         """
         remove from self.playlisits those which titles does not listed in `titles` param
         """
@@ -416,14 +417,14 @@ class DeezerTool(object):
         self.playlists = [pl for pl in self.playlists if pl['title'] in titles]
         return self
 
-    def findAllPlaylists(self) -> 'DeezerTool':
+    def find_all_play_lists(self) -> 'DeezerTool':
         """
         fetch info about all playlists and store it in self.playlists
         """
-        self.playlists = self.apiGet('/user/me/playlists', 'list')
+        self.playlists = self.api_get('/user/me/playlists', 'list')
         return self
 
-    def findTracksByPlaylists(self) -> 'DeezerTool':
+    def find_tracks_by_playlists(self) -> 'DeezerTool':
         """
         fetch info about all tracks, listed in playlists from self.playlists
         and store it in self.tracks
@@ -431,287 +432,287 @@ class DeezerTool(object):
         self.tracks = []
         for pl in self.playlists:
             uri = '/playlist/{0}/tracks'.format(pl['id'])
-            tracks = self.apiGet(uri, 'list')
+            tracks = self.api_get(uri, 'list')
             self.tracks += tracks
 
         return self
 
-    def shuffleTracks(self) -> 'DeezerTool':
+    def shuffle_tracks(self) -> 'DeezerTool':
         """
         shuffle self.tracks
         """
         shuffle(self.tracks)
         return self
 
-    def filterTracksByLimit(self, limit:int=None) -> 'DeezerTool':
+    def filter_tracks_by_limit(self, limit:int=None) -> 'DeezerTool':
         """
         left only first `limit` items from self.tracks, removing the rest
         if limit is None than limit getting from default value
         """
         if limit is None:
-            limit = self.limitTracks
+            limit = self.LIMIT_TRACKS
 
         self.tracks = self.tracks[:limit]
         return self
 
-    def getUser(self) -> Dict:
+    def get_user(self) -> Dict:
         """
         get info about current user
         """
-        return self.auth.getUser()
+        return self.auth.get_user()
 
-    def createPlaylist(self, title:str) -> 'DeezerTool':
+    def create_playlist(self, title:str) -> 'DeezerTool':
         """
         create playlist with title `title` in your Deezer library
         """
-        uri = '/user/{0}/playlists'.format(self.getUser()['id'])
-        response = self.apiPost(uri, 'single', {'title': title})
-        self.newPlaylistId = response['id']
+        uri = '/user/{0}/playlists'.format(self.get_user()['id'])
+        response = self.api_post(uri, 'single', {'title': title})
+        self.new_playlist_id = response['id']
         return self
 
-    def removePlaylistById(self, id) -> 'DeezerTool':
+    def remove_playlist_by_id(self, id) -> 'DeezerTool':
         """
         remove playlist from your library by id
         it will not warning you or ask, so think carefully
         """
         uri = '/playlist/{0}'.format(id)
-        response = self.apiDelete(uri, 'single')
+        response = self.api_delete(uri, 'single')
         return self
 
-    def purgePlaylistById(self, plId) -> 'DeezerTool':
+    def purge_playlist_by_id(self, id) -> 'DeezerTool':
         """
         remove all tracks from playlist by id
         it will not warning you or ask, so think carefully
         """
-        uri = '/playlist/{0}/tracks'.format(plId)
-        groups = self.getStringOfIdsByGroups(self.tracks, self.limitItemsToDeleteAtOneRequest)
+        uri = '/playlist/{0}/tracks'.format(id)
+        groups = self.get_string_of_ids_by_groups(self.tracks, self.LIMIT_ITEMS_DELETE_PER_ONE_REQUEST)
 
-        for trackIds in groups:
-            response = self.apiDelete(uri, 'single', {'songs': trackIds})
+        for track_ids in groups:
+            response = self.api_delete(uri, 'single', {'songs': track_ids})
 
-    def purgePlaylistByTitle(self, title) -> 'DeezerTool':
+    def purge_playlist_by_title(self, title) -> 'DeezerTool':
         """
         remove all tracks from all playlists with this title
         it will not warning you or ask, so think carefully
         """
-        self.findAllPlaylists()\
-            .filterPlaylistsByTitles(title)\
-            .findTracksByPlaylists()
+        (self.find_all_play_lists()
+                    .filter_playlists_by_titles(title)
+                    .find_tracks_by_playlists())
 
         for pl in self.playlists:
-            self.purgePlaylistById(pl['id'])
+            self.purge_playlist_by_id(pl['id'])
 
-    def removePlaylistByTitle(self, title) -> 'DeezerTool':
+    def remove_playlist_by_title(self, title) -> 'DeezerTool':
         """
         remove all playlists from your library with this title
         it will not warning you or ask, so think carefully
         """
-        self.findAllPlaylists()
-        self.filterPlaylistsByTitles([title])
+        self.find_all_play_lists()
+        self.filter_playlists_by_titles([title])
 
         for pl in self.playlists:
-            self.removePlaylistById(pl['id'])
+            self.remove_playlist_by_id(pl['id'])
 
         self.playlists = []
         return self
 
-    def addTracksToPlaylist(self, plId) -> bool:
+    def add_tracks_to_playlist(self, id) -> bool:
         """
         add tracks from self.tracks to playlist with this id
         """
-        uri = '/playlist/{0}/tracks'.format(plId)
-        trackIds = self.getStringOfIds(self.tracks)
-        response = self.apiPost(uri, 'single', {'songs': trackIds})
+        uri = '/playlist/{0}/tracks'.format(id)
+        track_ids = self.get_string_of_ids(self.tracks)
+        response = self.api_post(uri, 'single', {'songs': track_ids})
         return response
 
-    def addTracksToNewPlaylist(self) -> bool:
+    def add_tracks_to_new_playlist(self) -> bool:
         """
         add tracks from self.tracks to playlist that was just created
-        (it takes id from self.newPlaylistId)
+        (it takes id from self.new_playlist_id)
         """
-        return self.addTracksToPlaylist(self.newPlaylistId)
+        return self.add_tracks_to_playlist(self.new_playlist_id)
 
-    def resetPlaylistByTitle(self, title) -> 'DeezerTool':
+    def reset_playlist_by_title(self, title) -> 'DeezerTool':
         """
         find playlist by title and remove all tracks from it
         if there is several pl with title, it will remove them all and create one new
         if there is no pl with title, it will create one
-        cleared or created playlists id will be stored in self.targetPlaylistId
+        cleared or created playlists id will be stored in self.target_playlist_id
         """
 
         # find all playlists by title
-        self.findAllPlaylists().filterPlaylistsByTitles(title)
+        self.find_all_play_lists().filter_playlists_by_titles(title)
 
         # if there is more then one, remove it and create new
         if len(self.playlists) > 1:
-            self.removePlaylistByTitle(title)
-            self.createPlaylist(title)
-            self.targetPlaylistId = self.newPlaylistId
+            self.remove_playlist_by_title(title)
+            self.create_playlist(title)
+            self.target_playlist_id = self.new_playlist_id
 
         # if there is only one, delete all tracks from it
         elif len(self.playlists) == 1:
-            self.targetPlaylistId = self.playlists[0]['id']
-            self.findTracksByPlaylists()\
-                .purgePlaylistById(self.targetPlaylistId)
+            self.target_playlist_id = self.playlists[0]['id']
+            self.find_tracks_by_playlists()
+            self.purge_playlist_by_id(self.target_playlist_id)
 
         # if there is no one, create new
         else:
-            self.createPlaylist(title)
-            self.targetPlaylistId = self.newPlaylistId
+            self.create_playlist(title)
+            self.target_playlist_id = self.new_playlist_id
 
         return self
 
-    def resetShuffledPlaylist(self, title:str, sourcePls:List, limit:int = None) -> 'DeezerTool':
+    def reset_shuffled_playlist(self, title:str, source_pls:List, limit:int = None) -> 'DeezerTool':
         """
         create playlist with `title`, if it exests then purge it from tracks,
-        then populate it from your playlists wich titles listed in `sourcePls`,
+        then populate it from your playlists wich titles listed in `source_pls`,
         shufflig them before it
         """
 
         print('Resetting playlist {0}'.format(title))
 
-        # reset playlist and write its id to self.targetPlaylistId
-        self.resetPlaylistByTitle(title)
+        # reset playlist and write its id to self.target_playlist_id
+        self.reset_playlist_by_title(title)
 
-        # find all tracks from list sourcePls, suffle it and cut to limit
+        # find all tracks from list source_pls, suffle it and cut to limit
         # then shove to target playlist
-        self.findAllPlaylists()\
-            .filterPlaylistsByTitles(sourcePls)
+        self.find_all_play_lists()
+        self.filter_playlists_by_titles(source_pls)
 
         print('Finding all tracks from playlists: '+', '.join([pl['title'] for pl in self.playlists]))
 
-        self.findTracksByPlaylists()
+        self.find_tracks_by_playlists()
 
-        tracksCount = len(self.tracks)
-        print('Found {0} tracks'.format(str(tracksCount)))
+        tracks_count = len(self.tracks)
+        print('Found {0} tracks'.format(str(tracks_count)))
 
-        self.ridOfDoubleTracks()
-        newTracksCount = len(self.tracks)
-        tracksCountDelta = tracksCount - newTracksCount
+        self.rid_of_double_tracks()
+        new_tracks_count = len(self.tracks)
+        tracks_count_delta = tracks_count - new_tracks_count
 
-        if tracksCountDelta > 0:
-            print('Rid of {0} duplicates, {1} tracks left'.format(tracksCountDelta, newTracksCount))
+        if tracks_count_delta > 0:
+            print('Rid of {0} duplicates, {1} tracks left'.format(tracks_count_delta, new_tracks_count))
 
         print('Shuffling')
-        self.shuffleTracks()\
-            .filterTracksByLimit(limit)
+        self.shuffle_tracks()
+        self.filter_tracks_by_limit(limit)
 
         print('Adding {0} tracks to playlist {1}'.format(str(len(self.tracks)), title))
         
-        self.addTracksToPlaylist(self.targetPlaylistId)
+        self.add_tracks_to_playlist(self.target_playlist_id)
 
         print('Done')
 
         return self
 
-    def getStringOfIds(self, itemsList:List[Dict]) -> str:
+    def get_string_of_ids(self, items_list:List[Dict]) -> str:
         """
         get string of id of items in list
         """
-        itemsIds = ','.join([ str(item['id']) for item in itemsList ])
-        return itemsIds
+        items_ids = ','.join([ str(item['id']) for item in items_list ])
+        return items_ids
 
-    def getStringOfIdsByGroups(self, itemsList:List[Dict], limit:int) -> List[str]:
+    def get_string_of_ids_by_groups(self, items_list:List[Dict], limit:int) -> List[str]:
         """
         get list of strings of id of items in list, splitted by `limit` id in string
         """
         groups = []
-        for i in range(0, len(itemsList), limit):
-            groups.append(self.getStringOfIds( itemsList[i:i+limit] ))
+        for i in range(0, len(items_list), limit):
+            groups.append(self.get_string_of_ids( items_list[i:i+limit] ))
 
         return groups
 
-    def checkForValidScenarioName(self, scenarioName:str, raiseException = False) -> bool:
+    def check_scenario_name_valid(self, scenario_name:str, raise_exception = False) -> bool:
         """
-        check if scenarioName is valid name for scenario
-        if raiseException is True, then instad of returning False it will raise exception
+        check if scenario_name is valid name for scenario
+        if raise_exception is True, then instad of returning False it will raise exception
         """
-        check = bool(re.search('^pl_', scenarioName))
+        check = bool(re.search('^pl_', scenario_name))
 
-        if raiseException and not check:
-            raise DeezerToolException('Invalid scenario name: "{}"'.format(scenarioName))
+        if raise_exception and not check:
+            raise DeezerToolException('Invalid scenario name: "{}"'.format(scenario_name))
         else:
             return check
 
-    def execScenario(self, scenario) -> 'DeezerTool':
+    def exec_scenario(self, scenario) -> 'DeezerTool':
         """
         execute scenrio from config by its name
         """
-        self.checkForValidScenarioName(scenario, True)
+        self.check_scenario_name_valid(scenario, True)
         
-        plConfig = self.config.get(scenario)
+        scenario_config = self.config.get(scenario)
 
-        if 'type' not in plConfig or not plConfig['type'] or plConfig['type'] not in self.validScenarioTypes:
+        if 'type' not in scenario_config or not scenario_config['type'] or scenario_config['type'] not in self.VALID_SCENARIO_TYPES:
             raise DeezerToolException('Scenario config section must contain valid type option')
 
-        if 'title' not in plConfig or not plConfig['title']:
+        if 'title' not in scenario_config or not scenario_config['title']:
             raise DeezerToolException('Scenario config section must contain title option')
         else:
-            title = plConfig['title']
+            title = scenario_config['title']
 
-        if 'source' not in plConfig or not plConfig['source']:
+        if 'source' not in scenario_config or not scenario_config['source']:
             raise DeezerToolException('Scenario config section must contain source option')
         else:
-            sourcePls = plConfig['source'].split(', ')
+            source_pls = scenario_config['source'].split(', ')
         
-        limit = int(plConfig['limit']) if 'limit' in plConfig else None
+        limit = int(scenario_config['limit']) if 'limit' in scenario_config else None
 
-        self.resetShuffledPlaylist(title, sourcePls, limit)
+        self.reset_shuffled_playlist(title, source_pls, limit)
 
         return self
 
-    def getListOfScenarios(self) -> List:
+    def get_list_of_scenarios(self) -> List:
         """
         get list of scenarios names from config
         """
-        scenarios = [key for key, val in self.config.get().items() if self.checkForValidScenarioName(key)]
+        scenarios = [key for key, val in self.config.get().items() if self.check_scenario_name_valid(key)]
 
         return scenarios
 
-    def getScenarioNameByIndex(self, n:int) -> str:
+    def get_scenario_name_by_index(self, n:int) -> str:
         """
         get scenarios name by it order number in config 
         """
-        scenarios = self.getListOfScenarios()
+        scenarios = self.get_list_of_scenarios()
         if len(scenarios) > n:
             return scenarios[n]
         else:
             raise DeezerToolException('There is no scenario number {0}. Max number is {1}'.format(n, len(scenarios)-1))
 
-    def getScenarioIndexByName(self, scenario) -> int:
+    def get_scenario_index_by_name(self, scenario) -> int:
         """
         get scenario order number by it name
         """
-        scenarios = self.getListOfScenarios()
+        scenarios = self.get_list_of_scenarios()
         if scenario in scenarios:
             return scenarios.index(scenario)
         else:
             raise DeezerToolException('There is no scenario "{}"'.format(scenario))
 
-    def getScenarioConfig(self, scenario) -> Dict:
-        if self.checkForValidScenarioName(scenario, True):
+    def get_scenario_config(self, scenario:str) -> Dict:
+        if self.check_scenario_name_valid(scenario, True):
             return self.config.get(scenario)
 
-    def ridOfDoubleTracks(self) -> 'DeezerTool':
+    def rid_of_double_tracks(self) -> 'DeezerTool':
         """
         remove duplicated items from self.tracks
         """
-        self.tracks = self.ridOfDoublesInListOfDict(self.tracks)
+        self.tracks = self.rid_of_doubles_in_list_of_dict(self.tracks)
         return self
 
-    def ridOfDoublesInListOfDict(self, listOfDict:List[Dict], field:str = 'id'):
+    def rid_of_doubles_in_list_of_dict(self, list_of_dict:List[Dict], field:str = 'id'):
         """
-        remove duplicates from `listOfDict`, comparig them by `field`
+        remove duplicates from `list_of_dict`, comparig them by `field`
         """
-        newList = []
-        uniqueVals = []
+        new_list = []
+        unique_vals = []
 
-        for el in listOfDict:
-            if el[field] not in uniqueVals:
-                uniqueVals.append(el[field])
-                newList.append(el)
+        for el in list_of_dict:
+            if el[field] not in unique_vals:
+                unique_vals.append(el[field])
+                new_list.append(el)
 
-        return newList
+        return new_list
 
 class _Authorization(Exception):
     """
@@ -722,8 +723,8 @@ class _Authorization(Exception):
 
 class DeezerApiError(Exception):
     def __init__(self, message, code):
-        excMessage = 'Deezer API error {1}: {0}'.format(message, 'code '+str(code) if code else '')
-        super(DeezerApiError, self).__init__(excMessage)
+        exc_message = 'Deezer API error {1}: {0}'.format(message, 'code '+str(code) if code else '')
+        super(DeezerApiError, self).__init__(exc_message)
 
 class DeezerToolException(Exception):
     pass
@@ -731,7 +732,7 @@ class DeezerToolException(Exception):
 class DeezerAuthException(Exception):
     pass
 
-def handleExceptionOutput(e, template='{0}'):
+def handle_exception_output(e, template='{0}'):
     """
     if not DEBUG_MODE swallow tracing exception, output only message
     """
@@ -740,11 +741,11 @@ def handleExceptionOutput(e, template='{0}'):
     else:
         raise e
 
-def printHelpAndExit(parser):
+def print_help_and_exit(parser):
     parser.print_help()
     sys.exit()
 
-def buildCliParser():
+def build_cli_parser():
     parser = argparse.ArgumentParser(
             description = 'This script will create playlist in your Deezer library consisting of shuffled tracks from your other playlists. Pass scenario name or number to create playlist from it. Pass -l or -lv to see all scenarios. Scenarios sets up in config wich by default in ~/.config/dzshuffled/config.ini but you can reassign it with DZSHUFFLED_CONFIG_PATH environment variable.'
         )
@@ -783,34 +784,34 @@ def buildCliParser():
 
     return parser
 
-def printInfoAboutScenario(number, name, data = None):
+def print_info_about_scenario(number, name, data = None):
     if data:
         print('[{0}] {1}'.format(number, name))
         pp.pprint(data)
     else:
         print('[{0}] {1}'.format(number, name))
 
-def printListScenarios(dTool, verbosity=None):
-    scenarios = dTool.getListOfScenarios()
+def print_list_scenarios(dz_tool, verbosity=None):
+    scenarios = dz_tool.get_list_of_scenarios()
     for i in range(len(scenarios)):
         if verbosity:
-            printInfoAboutScenario(i, scenarios[i], dTool.getScenarioConfig(scenarios[i]))
+            print_info_about_scenario(i, scenarios[i], dz_tool.get_scenario_config(scenarios[i]))
         else:
-            printInfoAboutScenario(i, scenarios[i])
+            print_info_about_scenario(i, scenarios[i])
 
-def processCliScenarioCall(scenarioInput, dTool, infoFlag=None):
-    if scenarioInput.isnumeric():
-        scenarioIndex = int(scenarioInput)
-        scenarioName = dTool.getScenarioNameByIndex(scenarioIndex)
+def process_cli_scenario_call(scenario_input, dz_tool, info_flag=None):
+    if scenario_input.isnumeric():
+        scenario_index = int(scenario_input)
+        scenario_name = dz_tool.get_scenario_name_by_index(scenario_index)
     else:
-        scenarioName = scenarioInput
-        scenarioIndex = dTool.getScenarioIndexByName(scenarioName)
+        scenario_name = scenario_input
+        scenario_index = dz_tool.get_scenario_index_by_name(scenario_name)
 
-    if args.info:
-        printInfoAboutScenario(scenarioIndex, scenarioName, dTool.getScenarioConfig(scenarioName))
+    if info_flag:
+        print_info_about_scenario(scenario_index, scenario_name, dz_tool.get_scenario_config(scenario_name))
     else:
-        dTool.checkAndUpdateToken()
-        dTool.execScenario(scenarioName)
+        dz_tool.check_and_update_token()
+        dz_tool.exec_scenario(scenario_name)
 
 if __name__ == '__main__':
 
@@ -818,7 +819,7 @@ if __name__ == '__main__':
 
     try:
         config = DeezerConfig(CONFIG_PATH)
-        parser = buildCliParser()
+        parser = build_cli_parser()
         args = parser.parse_args()
 
         if args.version:
@@ -826,21 +827,20 @@ if __name__ == '__main__':
             sys.exit()
 
         if not args.scenario and not args.list:
-            printHelpAndExit(parser)        
+            print_help_and_exit(parser)        
 
         auth = DeezerAuth()
-        dTool = DeezerTool(config, auth)  
-        scenariosList = dTool.getListOfScenarios()
+        dz_tool = DeezerTool(config, auth)  
 
         if args.list:
-            printListScenarios(dTool, args.verbous)
+            print_list_scenarios(dz_tool, args.verbous)
             sys.exit()
 
         if args.scenario:
-            processCliScenarioCall(args.scenario, dTool, args.info)
+            process_cli_scenario_call(args.scenario, dz_tool, args.info)
             sys.exit()
 
     except DeezerApiError as e:
-        handleExceptionOutput(e)
+        handle_exception_output(e)
     except Exception as e:
-        handleExceptionOutput(e, 'Error: {0}')
+        handle_exception_output(e, 'Error: {0}')
