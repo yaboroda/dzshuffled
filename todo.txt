@@ -1,3 +1,4 @@
+ - rewrite by PEP8 and style guidelines
  - readme.md
  - checking playlist titles from scenario
  - different scenario types?
