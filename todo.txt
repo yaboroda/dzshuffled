@@ -1,3 +1,2 @@
- - readme.md
- - checking playlist titles from scenario
  - different scenario types?
+ - bash autocomplite scenario names

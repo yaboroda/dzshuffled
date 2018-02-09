@@ -19,8 +19,8 @@ import http.server
 import webbrowser
 import requests
 
-SCRIPT_VERSION = '0.9.2.0'
-DEBUG_MODE = True
+SCRIPT_VERSION = '1.0.0.0'
+DEBUG_MODE = False
 pp = pprint.PrettyPrinter(indent=4)
 
 """If environment var defined, set CONFIG_PATH from it,
@@ -607,6 +607,40 @@ class DeezerTool(object):
 
         return self
 
+    def check_for_presence_of_playlist_by_title(self, title, 
+                                                raise_exception: bool = False):
+        """Check if playlist with title present in self.playlists"""
+        for pl in self.playlists:
+            if pl['title'] == title: 
+                return True
+        
+        # if reach here, title was not found
+        if raise_exception:
+            raise DeezerToolError('Playlist {0} was not found.'.format(title))
+        else:
+            return False
+
+    def check_for_presence_of_playlists(self, source_pls: Dict, 
+                                        raise_exception: bool = False):
+        """Check if all titles from source_pls presence in self.playlists"""
+        if isinstance(source_pls, str):
+            source_pls = [source_pls]
+
+        missingPls = [pl for pl in source_pls \
+            if not self.check_for_presence_of_playlist_by_title(pl)]
+
+        if missingPls:
+            result = False
+        else:
+            result = True
+
+        if not result and raise_exception:
+            raise DeezerToolError(
+                'Cant find playlists: "{0}"'.format('", "'.join(missingPls))
+            )
+        else:
+            return result
+
     def reset_shuffled_playlist(self, title: str, source_pls: List,
                                 limit: int = None):
         """Create shuffled playlist with `title`.
@@ -621,9 +655,11 @@ class DeezerTool(object):
         # reset playlist and write its id to self.target_playlist_id
         self.reset_playlist_by_title(title)
 
-        # find all tracks from list source_pls,
+        # check if playlists from source_pls presence in library
+        # find all tracks from playlists from source_pls,
         # suffle it and cut to limit, then shove to target playlist
         self.find_all_play_lists()
+        self.check_for_presence_of_playlists(source_pls, True)
         self.filter_playlists_by_titles(source_pls)
 
         print('Finding all tracks from playlists: '
@@ -634,6 +670,7 @@ class DeezerTool(object):
         tracks_count = len(self.tracks)
         print('Found {0} tracks'.format(str(tracks_count)))
 
+        # rid of duplicates
         self.rid_of_double_tracks()
         new_tracks_count = len(self.tracks)
         tracks_count_delta = tracks_count - new_tracks_count
