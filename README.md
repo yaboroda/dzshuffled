@@ -5,7 +5,7 @@ This script will create playlist in your Deezer library consisting of shuffled t
 #### requirements:  
  - linux
  - python3
- - python module [requests](http://docs.python-requests.org/en/master/user/install/)
+ - python module [requests](http://docs.python-requests.org/en/master/user/install/){:target="_blank"}
 
 #### install 
 you can just download current version of script
@@ -102,7 +102,7 @@ limit = 1000
 
 #### register Deezer app
 To run this script you must register your own Deezer app and write Application ID and Secret Key in config.
- - go [here](https://developers.deezer.com/myapps)
+ - go [here](https://developers.deezer.com/myapps){:target="_blank"}
  - click Create a new Application button
  - Application domain: localhost
  - Redirect URL after authentication: http://localhost:8090/dzshuffled-auth  
