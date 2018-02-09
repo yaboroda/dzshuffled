@@ -1,13 +1,58 @@
 # dzshuffled
 
-script is working on linux  
-install nesessery libs for python and run script without parameters for help message  
-example of scenario will be in config file  
+This script will create playlist in your Deezer library consisting of shuffled tracks from your other playlists. I write it to overcome track number limit for playlist. I have playlists for work work 1, work 2, work 3. And script select random 1000 tracks from all of them and make with it new playlist.
 
-proper readme will be written later  
+#### requirements:  
+ - linux
+ - python3
+ - python module [requests](http://docs.python-requests.org/en/master/user/install/)
 
+#### install 
+you can just download current version of script
 ```sh
-$ ./dzshuffled
+$ wget https://raw.githubusercontent.com/yaboroda/dzshuffled/master/dzshuffled;
+$ chmod +x dzshuffled;
+$ sudo chown root:root dzshuffled;
+$ sudo mv dzshuffled /usr/bin/dzshuffled;
+```
+
+or you can clone git repo and make symlink
+```sh
+$ git clone https://github.com/yaboroda/dzshuffled;
+$ cd dzshuffled/;
+$ sudo ln -s $(pwd)/dzshuffled /usr/bin/dzshuffled
+```
+
+
+#### usage
+show list of scenarios in config file
+```sh
+$ dzshuffled -l
+```
+
+show list of scenarios in config file with more info about them
+```sh
+$ dzshuffled -lv
+```
+
+show info about scenario number 0
+```sh
+$ dzshuffled -i 0
+```
+
+show info about scenario with name pl_example
+```sh
+$ dzshuffled -i pl_example
+```
+
+run scenario with name pl_example
+```sh
+$ dzshuffled pl_example
+```
+
+to show help message run script without parameters
+```sh
+$ dzshuffled
 
 usage: dzshuffled [-h] [-l] [-v] [-i] [--version] [SCENARIO]
 
@@ -35,7 +80,9 @@ Web-server will be started on port from config to receive Deezer answer to authe
 
 pl_example section is scenario to make playlist named 'Example shuffled playlist' with tracks of playlists from source option.  
 
-you can write as many scenarios as you like, but sections names must begin with pl_  
+you can write as many scenarios as you like, but sections names must begin with pl_ 
+
+playlists in source options should be separated with comma and space 
 
 ```ini
 [auth]
@@ -52,3 +99,13 @@ type = shuffled
 source = playlist 1, playlist 2
 limit = 1000
 ```
+
+#### register Deezer app
+To run this script you must register your own Deezer app and write Application ID and Secret Key in config.
+ - go [here](https://developers.deezer.com/myapps)
+ - click Create a new Application button
+ - Application domain: localhost
+ - Redirect URL after authentication: http://localhost:8090/dzshuffled-auth  
+ (where 8090 is port number that you write in config)
+ - Link to your Terms of Use: any link
+ - Other fields fill as you like
