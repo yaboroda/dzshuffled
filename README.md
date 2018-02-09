@@ -22,7 +22,44 @@ $ git clone https://github.com/yaboroda/dzshuffled;
 $ cd dzshuffled/;
 $ sudo ln -s $(pwd)/dzshuffled /usr/bin/dzshuffled
 ```
+#### register Deezer app
+To run this script you must register your own Deezer app and write Application ID and Secret Key in config.
+ - go [here](https://developers.deezer.com/myapps)
+ - click Create a new Application button
+ - Application domain: localhost
+ - Redirect URL after authentication: http://localhost:8090/dzshuffled-auth  
+ (where 8090 is port number that you write in config)
+ - Link to your Terms of Use: any link
+ - Other fields fill as you like
+ 
+#### config
+Config by default in ~/.config/dzshuffled/config.ini but you can reassign
+it with DZSHUFFLED_CONFIG_PATH environment variable
 
+Fill app_id and secret, token will be fetched by script  
+Web-server will be started on port from config to receive Deezer answer to authentication  
+
+pl_example section is scenario to make playlist named 'Example shuffled playlist' with tracks of playlists from source option.  
+
+you can write as many scenarios as you like, but sections names must begin with pl_ 
+
+playlists in source options should be separated with comma and space 
+
+```ini
+[auth]
+app_id = 
+secret = 
+port = 8090
+
+[token]
+token = 
+
+[pl_example]
+title = Example shuffled playlist
+type = shuffled
+source = playlist 1, playlist 2
+limit = 1000
+```
 
 #### usage
 show list of scenarios in config file
@@ -73,39 +110,3 @@ optional arguments:
   -i, --info     show info about selected scenario but not do anithing
   --version      show script version
 ```
-
-#### default config file
-Fill app_id and secret, token will be fetched by script  
-Web-server will be started on port from config to receive Deezer answer to authentication  
-
-pl_example section is scenario to make playlist named 'Example shuffled playlist' with tracks of playlists from source option.  
-
-you can write as many scenarios as you like, but sections names must begin with pl_ 
-
-playlists in source options should be separated with comma and space 
-
-```ini
-[auth]
-app_id = 
-secret = 
-port = 8090
-
-[token]
-token = 
-
-[pl_example]
-title = Example shuffled playlist
-type = shuffled
-source = playlist 1, playlist 2
-limit = 1000
-```
-
-#### register Deezer app
-To run this script you must register your own Deezer app and write Application ID and Secret Key in config.
- - go [here](https://developers.deezer.com/myapps)
- - click Create a new Application button
- - Application domain: localhost
- - Redirect URL after authentication: http://localhost:8090/dzshuffled-auth  
- (where 8090 is port number that you write in config)
- - Link to your Terms of Use: any link
- - Other fields fill as you like
