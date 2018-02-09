@@ -202,7 +202,7 @@ class DeezerAuth(object):
     def authorize(self):
         """Authorize and get token."""
         if not self.app_id or not self.secret:
-            raise DeezerAuthException(
+            raise DeezerAuthError(
                 'You cant get authorization token without app_id '
                 'and secret. Fill it in config file or write there '
                 'valid token.'
@@ -233,7 +233,7 @@ class DeezerAuth(object):
         if 'access_token' in response:
             self.token = response['access_token']
         else:
-            raise DeezerAuthException('Cant get token from deezer')
+            raise DeezerAuthError('Cant get token from deezer')
 
     def check_token(self):
         """Check auth token, fetching user info, return bool"""
@@ -246,14 +246,14 @@ class DeezerAuth(object):
             self.user = response
             return True
         else:
-            raise DeezerAuthException('Cant check auth token')
+            raise DeezerAuthError('Cant check auth token')
 
     def fetch_user(self):
         """Fetch info about logged in user. It heppens on token check.
         Info stored in self.user
         """
         if not self.check_token():
-            raise DeezerAuthException('Cant fetch user info due failed'
+            raise DeezerAuthError('Cant fetch user info due failed'
                                       ' token check')
 
     def get_user(self) -> Dict:
@@ -329,7 +329,7 @@ class DeezerTool(object):
         if self.check_token():
             self.config.set('token', 'token', self.auth.get_token())
         else:
-            raise DeezerToolException('Cant verify new token')
+            raise DeezerToolError('Cant verify new token')
 
         return self
 
@@ -370,7 +370,7 @@ class DeezerTool(object):
 
         if response_type == 'list':
             if 'data' not in response:
-                raise DeezerToolException('Error occured on request'
+                raise DeezerToolError('Error occured on request'
                                           ' to Deezer api')
 
             nextPages = []
@@ -383,7 +383,7 @@ class DeezerTool(object):
             return response
 
         else:
-            raise DeezerToolException(
+            raise DeezerToolError(
                 'Unknown response type "{0}",'
                 ' it can be either single or list'.format(response_type)
             )
@@ -680,7 +680,7 @@ class DeezerTool(object):
         check = bool(re.search('^pl_', scenario_name))
 
         if raise_exception and not check:
-            raise DeezerToolException('Invalid scenario name: "{}"'
+            raise DeezerToolError('Invalid scenario name: "{}"'
                                       .format(scenario_name))
         else:
             return check
@@ -693,17 +693,17 @@ class DeezerTool(object):
 
         if 'type' not in scenario_config or not scenario_config['type'] \
                 or scenario_config['type'] not in self.VALID_SCENARIO_TYPES:
-            raise DeezerToolException('Scenario config section must'
+            raise DeezerToolError('Scenario config section must'
                                       ' contain valid type option')
 
         if 'title' not in scenario_config or not scenario_config['title']:
-            raise DeezerToolException('Scenario config section must'
+            raise DeezerToolError('Scenario config section must'
                                       ' contain title option')
         else:
             title = scenario_config['title']
 
         if 'source' not in scenario_config or not scenario_config['source']:
-            raise DeezerToolException('Scenario config section must'
+            raise DeezerToolError('Scenario config section must'
                                       ' contain source option')
         else:
             source_pls = scenario_config['source'].split(', ')
@@ -730,7 +730,7 @@ class DeezerTool(object):
         if len(scenarios) > n:
             return scenarios[n]
         else:
-            raise DeezerToolException(
+            raise DeezerToolError(
                 'There is no scenario number {0}. Max number is {1}'
                 .format(n, len(scenarios)-1)
             )
@@ -741,7 +741,7 @@ class DeezerTool(object):
         if scenario in scenarios:
             return scenarios.index(scenario)
         else:
-            raise DeezerToolException('There is no scenario "{0}"'
+            raise DeezerToolError('There is no scenario "{0}"'
                                       .format(scenario))
 
     def get_scenario_config(self, scenario: str):
@@ -785,11 +785,11 @@ class DeezerApiError(Exception):
         super(DeezerApiError, self).__init__(exc_message)
 
 
-class DeezerToolException(Exception):
+class DeezerToolError(Exception):
     pass
 
 
-class DeezerAuthException(Exception):
+class DeezerAuthError(Exception):
     pass
 
 
