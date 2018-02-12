@@ -25,6 +25,11 @@ $ sudo ln -s $(pwd)/dzshuffled /usr/bin/dzshuffled
 
 
 #### usage
+edit config file in Vim, you can specify editor in config
+```sh
+$ dzshuffled -e
+```
+
 show list of scenarios in config file
 ```sh
 $ dzshuffled -l
@@ -71,6 +76,8 @@ optional arguments:
                  param to show info about them
   -v, --verbous  if called with argument -l, show info about listed scenarios
   -i, --info     show info about selected scenario but not do anithing
+  -e, --edit     edit config file vith editor specified in config, by default
+                 it is Vim
   --version      show script version
 ```
 
@@ -85,13 +92,14 @@ you can write as many scenarios as you like, but sections names must begin with 
 playlists in source options should be separated with comma and space 
 
 ```ini
+[system]
+port = 8090
+editor = vim
+
 [auth]
+token = 
 app_id = 
 secret = 
-port = 8090
-
-[token]
-token = 
 
 [pl_example]
 title = Example shuffled playlist
