@@ -7,21 +7,25 @@ This script will create playlist in your Deezer library consisting of shuffled t
  - python3
  - python module [requests](http://docs.python-requests.org/en/master/user/install/)
 
-#### install 
+#### install  
 you can just download current version of script
 ```sh
-$ wget https://raw.githubusercontent.com/yaboroda/dzshuffled/master/dzshuffled;
-$ chmod +x dzshuffled;
-$ sudo chown root:root dzshuffled;
-$ sudo mv dzshuffled /usr/bin/dzshuffled;
+$ wget -O dzshuffled-master.zip https://github.com/yaboroda/dzshuffled/archive/master.zip;
+$ unzip dzshuffled-master.zip;
+$ cd dzshuffled-master;
 ```
 
-or you can clone git repo and make symlink
+or you can clone git repo
 ```sh
 $ git clone https://github.com/yaboroda/dzshuffled;
 $ cd dzshuffled/;
+```
+
+then make symlink
+```sh
 $ sudo ln -s $(pwd)/dzshuffled /usr/bin/dzshuffled
 ```
+
 #### register Deezer app
 To run this script you must register your own Deezer app and write Application ID and Secret Key in config.
  - go [here](https://developers.deezer.com/myapps)
