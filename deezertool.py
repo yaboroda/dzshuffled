@@ -161,14 +161,6 @@ class DeezerTool(object):
         response = requests.delete(self.BASE_URL + uri)
         return self.prepare_response(response, response_type)
 
-    def get_playlists(self) -> List:
-        """Get playlists info stored in self.playlists."""
-        return self.playlists
-
-    def get_tracks(self) -> List:
-        """Get tracks info stored in self.tracks."""
-        return self.tracks
-
     def filter_playlists_by_titles(self, titles: Union[List, str]):
         """Remove from self.playlisits those items
         which titles does not listed in `titles` param.
