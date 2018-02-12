@@ -1,2 +1,3 @@
+ - separate DeezerRequests class from DeezerTool
  - different scenario types?
  - bash autocomplite scenario names
