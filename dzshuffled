@@ -17,9 +17,11 @@ import argparse
 from typing import Dict, List, Union
 import http.server
 import webbrowser
+import subprocess
+
 import requests
 
-SCRIPT_VERSION = '1.0.0.0'
+SCRIPT_VERSION = '1.1.0.0'
 DEBUG_MODE = False
 pp = pprint.PrettyPrinter(indent=4)
 
@@ -135,12 +137,13 @@ class DeezerConfig(Config):
 
     def set_up_default_config(self):
         """Sets up default config data."""
+        self.cfg['system'] = {
+            'port': '8090',
+            'editor': 'vim'
+        }
         self.cfg['auth'] = {
             'app_id': '',
             'secret': '',
-            'port': '8090'
-        }
-        self.cfg['token'] = {
             'token': ''
         }
         self.cfg['pl_example'] = {
@@ -177,7 +180,7 @@ class DeezerAuth(object):
     def get_token(self):
         return self.token
 
-    def set_params(self, params: Dict, token=''):
+    def set_params(self, port, secret, app_id, token=''):
         """Set parameters for authorization.
 
         If you pass in token, it will be used instead of retriving new.
@@ -190,9 +193,9 @@ class DeezerAuth(object):
         token -- auth token, if empty or invalid,
             it will be fetched (default '')
         """
-        self.port = int(params['port'])
-        self.secret = params['secret']
-        self.app_id = params['app_id']
+        self.port = int(port)
+        self.secret = secret
+        self.app_id = app_id
         self.token = token
 
     def set_token(self, token):
@@ -313,8 +316,10 @@ class DeezerTool(object):
         self.tracks = []
         self.config = config
         self.auth = auth
-        self.auth.set_params(config.get('auth'),
-                             config.get('token', 'token'))
+        self.auth.set_params(config.get('system', 'port'),
+                             config.get('auth', 'secret'),
+                             config.get('auth', 'app_id'),
+                             config.get('auth', 'token'))
 
     def check_and_update_token(self):
         """Check auth token and update it if not valid."""
@@ -327,7 +332,7 @@ class DeezerTool(object):
         self.auth.authorize()
 
         if self.check_token():
-            self.config.set('token', 'token', self.auth.get_token())
+            self.config.set('auth', 'token', self.auth.get_token())
         else:
             raise DeezerToolError('Cant verify new token')
 
@@ -339,7 +344,7 @@ class DeezerTool(object):
 
     def get_token(self):
         """Get current auth token. Return str."""
-        return self.config.get('token', 'token')
+        return self.config.get('auth', 'token')
 
     def process_api_error(self, error_data: Dict):
         """Raise exception by error sesponse from Deezer.
@@ -887,6 +892,14 @@ def build_cli_parser():
     )
 
     parser.add_argument(
+        '-e', '--edit',
+        action='store_const',
+        const=True,
+        help=('edit config file vith editor specified in config, by default'
+              ' it is Vim')
+    )
+
+    parser.add_argument(
         '--version',
         action='store_const',
         const=True,
@@ -932,6 +945,10 @@ def process_cli_scenario_call(scenario_input, dz_tool, info_flag=None):
         dz_tool.check_and_update_token()
         dz_tool.exec_scenario(scenario_name)
 
+def edit_config(config):
+    p = subprocess.Popen([config.get('system', 'editor'), config.path])
+    return p.wait()
+
 
 if __name__ == '__main__':
 
@@ -944,6 +961,10 @@ if __name__ == '__main__':
 
         if args.version:
             print('version: {0}'.format(SCRIPT_VERSION))
+            sys.exit()
+
+        if args.edit:
+            edit_config(config)
             sys.exit()
 
         if not args.scenario and not args.list:
