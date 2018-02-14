@@ -33,7 +33,7 @@ To run this script you must register your own Deezer app and write Application I
  - Application domain: localhost
  - Redirect URL after authentication: http://localhost:8090/dzshuffled-auth  
  (where 8090 is port number that you write in config)
- - Link to your Terms of Use: any link
+ - Link to your Terms of Use: https://raw.githubusercontent.com/yaboroda/dzshuffled/master/LICENSE
  - Other fields fill as you like
  
 #### config
