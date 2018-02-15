@@ -14,9 +14,10 @@ import subprocess
 
 from deezerconfig import DeezerConfig
 from deezerauth import DeezerAuth
-from deezertool import DeezerTool, DeezerApiError
+from deezertool import DeezerTool
+from deezerapiinteract import DeezerApiInteract, DeezerApiError
 
-SCRIPT_VERSION = '1.2.0.0'
+SCRIPT_VERSION = '1.2.1.0'
 DEBUG_MODE = False
 pp = pprint.PrettyPrinter(indent=4)
 
@@ -154,6 +155,8 @@ def edit_config(config):
 
 
 def main():
+    global DEBUG_MODE
+
     try:
         parser = build_cli_parser()
         args = parser.parse_args()
@@ -174,8 +177,7 @@ def main():
         if not args.scenario and not args.list:
             print_help_and_exit(parser)
 
-        auth = DeezerAuth()
-        dz_tool = DeezerTool(config, auth)
+        dz_tool = DeezerTool(config, DeezerAuth(), DeezerApiInteract())
 
         if args.list:
             print_list_scenarios(dz_tool, args.verbous)

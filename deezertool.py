@@ -1,12 +1,10 @@
 import re
-import json
 from random import shuffle
 from typing import Dict, List, Union
 
-import requests
-
 from deezerconfig import DeezerConfig
 from deezerauth import DeezerAuth
+from deezerapiinteract import DeezerApiInteract
 
 
 class DeezerTool(object):
@@ -14,13 +12,12 @@ class DeezerTool(object):
     All actions related only to playlists and tracks, that added to it
     """
 
-    BASE_URL = 'http://api.deezer.com'
     VALID_SCENARIO_TYPES = ['shuffled']
     LIMIT_TRACKS = 1000
-    LIMIT_RESULTS_PER_REQUEST = 500
     LIMIT_ITEMS_DELETE_PER_ONE_REQUEST = 500
 
-    def __init__(self, config: DeezerConfig, auth: DeezerAuth):
+    def __init__(self, config: DeezerConfig, auth: DeezerAuth,
+                 api: DeezerApiInteract):
         self.playlists = []
         self.tracks = []
         self.config = config
@@ -29,10 +26,12 @@ class DeezerTool(object):
                              config.get('auth', 'secret'),
                              config.get('auth', 'app_id'),
                              config.get('auth', 'token'))
+        self.api = api
+        self.api.token = config.get('auth', 'token')
 
     def check_and_update_token(self):
         """Check auth token and update it if not valid."""
-        if not self.check_token():
+        if not self.auth.check_token():
             self.update_token()
         return self
 
@@ -40,127 +39,13 @@ class DeezerTool(object):
         """Authorize in Deezer and write new token in config file."""
         self.auth.authorize()
 
-        if self.check_token():
+        if self.auth.check_token():
             self.config.set('auth', 'token', self.auth.get_token())
+            self.api.token = self.config.get('auth', 'token')
         else:
             raise DeezerToolError('Cant verify new token')
 
         return self
-
-    def check_token(self):
-        """Check current auth token, return bool."""
-        return self.auth.check_token()
-
-    def get_token(self):
-        """Get current auth token. Return str."""
-        return self.config.get('auth', 'token')
-
-    def process_api_error(self, error_data: Dict):
-        """Raise exception by error sesponse from Deezer.
-
-        Keyword arguments:
-        error_data -- Dict with info about errror with keys:
-            'message' - error message, str
-            'code'    - error code, optional, str
-        """
-        code = error_data['code'] if 'code' in error_data else None
-        raise DeezerApiError(error_data['message'], code)
-
-    def prepare_response(self, response, response_type: str):
-        """Get data from response object.
-
-        Keyword arguments:
-        response -- response object from requests lib
-        response_type -- 'list' or 'single'
-        if 'list' then getting all paginated data with additional requests
-        """
-        response = json.loads(response.text)
-
-        if isinstance(response, bool):
-            return response
-
-        if 'error' in response:
-            return self.process_api_error(response['error'])
-
-        if response_type == 'list':
-            if 'data' not in response:
-                raise DeezerToolError('Error occured on request'
-                                      ' to Deezer api')
-
-            nextPages = []
-            if 'next' in response:
-                nextPages = self.api_get_strict(response['next'], 'list')
-
-            return response['data'] + nextPages
-
-        elif response_type == 'single':
-            return response
-
-        else:
-            raise DeezerToolError(
-                'Unknown response type "{0}",'
-                ' it can be either single or list'.format(response_type)
-            )
-
-    def add_required_params(self, params: Dict):
-        """Add token and limit to requests param. Return Dict"""
-        if 'access_token' not in params:
-            params['access_token'] = self.get_token()
-
-        if 'limit' not in params:
-            params['limit'] = self.LIMIT_RESULTS_PER_REQUEST
-
-        return params
-
-    def api_get(self, uri: str, response_type: str, params: Dict = {}):
-        """Send GET request to Deezer API, return Dict or bool
-
-        Keyword arguments:
-        uri -- address without domain
-        response_type -- 'single' or 'list'
-        params -- Dict with parameters to add to request (default {})
-        """
-        params = self.add_required_params(params)
-        response = requests.get(self.BASE_URL + uri, params)
-        return self.prepare_response(response, response_type)
-
-    def api_get_strict(self, url: str, response_type: str):
-        """Send GET request strictly by url, return bool or Dict
-
-        Url include domain and all parameters
-        response_type -- 'single' or 'list'
-        """
-        response = requests.get(url)
-        return self.prepare_response(response, response_type)
-
-    def api_post(self, uri: str, response_type: str, params: Dict = {}):
-        """Send POST request to Deezer API, return bool or Dict.
-
-        Keyword arguments:
-        uri -- address without domain
-        response_type -- 'single' or 'list'
-        params -- Dict with parameters to add to request (default {})
-        """
-        params = self.add_required_params(params)
-        response = requests.post(self.BASE_URL + uri, params)
-        return self.prepare_response(response, response_type)
-
-    def api_delete(self, uri: str, response_type: str, params: Dict = {}):
-        """Send DELETE request to Deezer API, return bool or Dict.
-
-        Keyword arguments:
-        uri -- address without domain
-        response_type -- 'single' or 'list'
-        params -- Dict with parameters to add to request (default {})
-        """
-        params = self.add_required_params(params)
-        uri += '?access_token={0}'.format(params.pop('access_token'))
-
-        for p, val in params.items():
-            uri += '&{0}={1}'.format(p, val)
-
-        response = requests.delete(self.BASE_URL + uri)
-        return self.prepare_response(response, response_type)
 
     def filter_playlists_by_titles(self, titles: Union[List, str]):
         """Remove from self.playlisits those items
@@ -174,7 +59,7 @@ class DeezerTool(object):
 
     def find_all_play_lists(self):
         """Fetch info about all playlists and store it in self.playlists."""
-        self.playlists = self.api_get('/user/me/playlists', 'list')
+        self.playlists = self.api.get_request('/user/me/playlists', 'list')
         return self
 
     def find_tracks_by_playlists(self):
@@ -184,7 +69,7 @@ class DeezerTool(object):
         self.tracks = []
         for pl in self.playlists:
             uri = '/playlist/{0}/tracks'.format(pl['id'])
-            tracks = self.api_get(uri, 'list')
+            tracks = self.api.get_request(uri, 'list')
             self.tracks += tracks
 
         return self
@@ -212,7 +97,7 @@ class DeezerTool(object):
     def create_playlist(self, title: str):
         """Create playlist with title in your Deezer library."""
         uri = '/user/{0}/playlists'.format(self.get_user()['id'])
-        response = self.api_post(uri, 'single', {'title': title})
+        response = self.api.post_request(uri, 'single', {'title': title})
         self.new_playlist_id = response['id']
         return self
 
@@ -222,7 +107,7 @@ class DeezerTool(object):
         It will not warning you or ask, so think carefully
         """
         uri = '/playlist/{0}'.format(id)
-        self.api_delete(uri, 'single')
+        self.api.delete_request(uri, 'single')
         return self
 
     def purge_playlist_by_id(self, id):
@@ -237,7 +122,7 @@ class DeezerTool(object):
         )
 
         for track_ids in groups:
-            self.api_delete(uri, 'single', {'songs': track_ids})
+            self.api.delete_request(uri, 'single', {'songs': track_ids})
 
     def purge_playlist_by_title(self, title):
         """Remove all tracks from all playlists with this title.
@@ -271,7 +156,7 @@ class DeezerTool(object):
         """
         uri = '/playlist/{0}/tracks'.format(id)
         track_ids = self.get_string_of_ids(self.tracks)
-        response = self.api_post(uri, 'single', {'songs': track_ids})
+        response = self.api.post_request(uri, 'single', {'songs': track_ids})
         return response
 
     def add_tracks_to_new_playlist(self) -> bool:
@@ -511,13 +396,6 @@ class DeezerTool(object):
                 new_list.append(el)
 
         return new_list
-
-
-class DeezerApiError(Exception):
-    def __init__(self, message, code):
-        codeStr = 'code '+str(code) if code else ''
-        exc_message = 'Deezer API error {1}: {0}'.format(message, codeStr)
-        super(DeezerApiError, self).__init__(exc_message)
 
 
 class DeezerToolError(Exception):
