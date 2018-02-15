@@ -40,7 +40,7 @@ class DeezerTool(object):
         self.auth.authorize()
 
         if self.auth.check_token():
-            self.config.set('auth', 'token', self.auth.get_token())
+            self.config.set('auth', 'token', self.auth.token)
             self.api.token = self.config.get('auth', 'token')
         else:
             raise DeezerToolError('Cant verify new token')
@@ -92,7 +92,7 @@ class DeezerTool(object):
 
     def get_user(self):
         """Get info about current user, return Dict."""
-        return self.auth.get_user()
+        return self.auth.user
 
     def create_playlist(self, title: str):
         """Create playlist with title in your Deezer library."""

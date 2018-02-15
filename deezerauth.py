@@ -28,9 +28,6 @@ class DeezerAuth(object):
         self.user = None
         self.token = ''
 
-    def get_token(self):
-        return self.token
-
     def set_params(self, port, secret, app_id, token=''):
         """Set parameters for authorization.
 
@@ -47,10 +44,6 @@ class DeezerAuth(object):
         self.port = int(port)
         self.secret = secret
         self.app_id = app_id
-        self.token = token
-
-    def set_token(self, token):
-        """Set auth token to use it."""
         self.token = token
 
     def authorize(self):
