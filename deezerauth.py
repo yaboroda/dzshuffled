@@ -1,10 +1,10 @@
 import json
-from typing import Dict, List, Union
 import http.server
 import webbrowser
 import re
 
 import requests
+
 
 class DeezerAuth(object):
     """Authorization in Deezer.
@@ -108,14 +108,15 @@ class DeezerAuth(object):
         """
         if not self.check_token():
             raise DeezerAuthError('Cant fetch user info due failed'
-                                      ' token check')
+                                  ' token check')
 
-    def get_user(self) -> Dict:
+    def get_user(self):
         """Return Dict with user info"""
         if self.user is None:
             self.fetch_user()
 
         return self.user
+
 
 class _AuthorizationServer(http.server.HTTPServer):
 

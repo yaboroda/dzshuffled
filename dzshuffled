@@ -10,11 +10,10 @@ import os
 import pprint
 import sys
 import argparse
-from typing import Dict, List, Union
 import subprocess
 
 from deezerconfig import DeezerConfig
-from deezerauth import DeezerAuth, DeezerAuthError
+from deezerauth import DeezerAuth
 from deezertool import DeezerTool, DeezerApiError
 
 SCRIPT_VERSION = '1.2.0.0'
@@ -148,6 +147,7 @@ def process_cli_scenario_call(scenario_input, dz_tool, info_flag=None):
         dz_tool.check_and_update_token()
         dz_tool.exec_scenario(scenario_name)
 
+
 def edit_config(config):
     p = subprocess.Popen([config.get('system', 'editor'), config.path])
     return p.wait()
@@ -193,4 +193,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-    

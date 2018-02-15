@@ -1,5 +1,6 @@
 from config import Config
 
+
 class DeezerConfig(Config):
     """Config class for DeezerTool object"""
 

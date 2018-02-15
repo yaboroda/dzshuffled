@@ -8,6 +8,7 @@ import requests
 from deezerconfig import DeezerConfig
 from deezerauth import DeezerAuth
 
+
 class DeezerTool(object):
     """This class manages playlists in your Deezer library.
     All actions related only to playlists and tracks, that added to it
@@ -84,7 +85,7 @@ class DeezerTool(object):
         if response_type == 'list':
             if 'data' not in response:
                 raise DeezerToolError('Error occured on request'
-                                          ' to Deezer api')
+                                      ' to Deezer api')
 
             nextPages = []
             if 'next' in response:
@@ -312,27 +313,27 @@ class DeezerTool(object):
 
         return self
 
-    def check_for_presence_of_playlist_by_title(self, title, 
+    def check_for_presence_of_playlist_by_title(self, title,
                                                 raise_exception: bool = False):
         """Check if playlist with title present in self.playlists"""
         for pl in self.playlists:
-            if pl['title'] == title: 
+            if pl['title'] == title:
                 return True
-        
+
         # if reach here, title was not found
         if raise_exception:
             raise DeezerToolError('Playlist {0} was not found.'.format(title))
         else:
             return False
 
-    def check_for_presence_of_playlists(self, source_pls: Dict, 
+    def check_for_presence_of_playlists(self, source_pls: Dict,
                                         raise_exception: bool = False):
         """Check if all titles from source_pls presence in self.playlists"""
         if isinstance(source_pls, str):
             source_pls = [source_pls]
 
-        missingPls = [pl for pl in source_pls \
-            if not self.check_for_presence_of_playlist_by_title(pl)]
+        missingPls = [pl for pl in source_pls
+                      if not self.check_for_presence_of_playlist_by_title(pl)]
 
         if missingPls:
             result = False
@@ -423,7 +424,7 @@ class DeezerTool(object):
 
         if raise_exception and not check:
             raise DeezerToolError('Invalid scenario name: "{}"'
-                                      .format(scenario_name))
+                                  .format(scenario_name))
         else:
             return check
 
@@ -436,17 +437,17 @@ class DeezerTool(object):
         if 'type' not in scenario_config or not scenario_config['type'] \
                 or scenario_config['type'] not in self.VALID_SCENARIO_TYPES:
             raise DeezerToolError('Scenario config section must'
-                                      ' contain valid type option')
+                                  ' contain valid type option')
 
         if 'title' not in scenario_config or not scenario_config['title']:
             raise DeezerToolError('Scenario config section must'
-                                      ' contain title option')
+                                  ' contain title option')
         else:
             title = scenario_config['title']
 
         if 'source' not in scenario_config or not scenario_config['source']:
             raise DeezerToolError('Scenario config section must'
-                                      ' contain source option')
+                                  ' contain source option')
         else:
             source_pls = scenario_config['source'].split(', ')
 
@@ -484,7 +485,7 @@ class DeezerTool(object):
             return scenarios.index(scenario)
         else:
             raise DeezerToolError('There is no scenario "{0}"'
-                                      .format(scenario))
+                                  .format(scenario))
 
     def get_scenario_config(self, scenario: str):
         """Get scenario config, return Dict."""

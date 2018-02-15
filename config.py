@@ -1,7 +1,7 @@
 import configparser
 import os
 import sys
-from typing import Dict, List, Union
+
 
 class Config(object):
     """Manage info from config .ini file."""
@@ -70,7 +70,7 @@ class Config(object):
                 data[cfg_section][key] = val
         return data
 
-    def get_section(self, section: str) -> Dict:
+    def get_section(self, section: str):
         """Will return section data as dictionary."""
         data = {}
         for key, val in self.cfg.items(section):
