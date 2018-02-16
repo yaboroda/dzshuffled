@@ -7,8 +7,9 @@ import requests
 class DeezerApiInteract(object):
     """Send requests to Deezer api and get answers as dicts"""
 
-    BASE_URL = 'http://api.deezer.com'
-    LIMIT_RESULTS_PER_REQUEST = 500
+    def __init__(self):
+        self._base_url = 'http://api.deezer.com'
+        self._limit_results_per_request = 500
 
     def process_api_error(self, error_data):
         """Raise exception by error sesponse from Deezer.
@@ -63,7 +64,7 @@ class DeezerApiInteract(object):
             params['access_token'] = self.token
 
         if 'limit' not in params:
-            params['limit'] = self.LIMIT_RESULTS_PER_REQUEST
+            params['limit'] = self._limit_results_per_request
 
         return params
 
@@ -77,7 +78,7 @@ class DeezerApiInteract(object):
         params -- Dict with parameters to add to request (default {})
         """
         params = self.add_required_params(params)
-        response = requests.get(self.BASE_URL + uri, params)
+        response = requests.get(self._base_url + uri, params)
         return self.prepare_response(response, response_type)
 
     def get_request_strict(self, url: str, response_type: str = 'single'):
@@ -99,7 +100,7 @@ class DeezerApiInteract(object):
         params -- Dict with parameters to add to request (default {})
         """
         params = self.add_required_params(params)
-        response = requests.post(self.BASE_URL + uri, params)
+        response = requests.post(self._base_url + uri, params)
         return self.prepare_response(response, response_type)
 
     def delete_request(self, uri: str, response_type: str = 'single',
@@ -117,7 +118,7 @@ class DeezerApiInteract(object):
         for p, val in params.items():
             uri += '&{0}={1}'.format(p, val)
 
-        response = requests.delete(self.BASE_URL + uri)
+        response = requests.delete(self._base_url + uri)
         return self.prepare_response(response, response_type)
 
 

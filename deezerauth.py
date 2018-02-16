@@ -16,17 +16,22 @@ class DeezerAuth(object):
     attach with each request to Deezer API
     """
 
-    _url_auth = ('https://connect.deezer.com/oauth/auth.php'
-                 '?app_id={0}&redirect_uri={1}'
-                 '&perms=basic_access,manage_library,delete_library')
-    _url_token = ('https://connect.deezer.com/oauth/access_token.php'
-                  '?app_id={0}&secret={1}&code={2}&output=json')
-    _url_redirect = 'http://localhost:{0}/authfinish'
-    _url_check_token = 'http://api.deezer.com/user/me?access_token={0}'
-
     def __init__(self):
-        self._user = None
         self.token = ''
+        self._user = None
+        self._url_auth = (
+            'https://connect.deezer.com/oauth/auth.php?app_id={0}'
+            '&redirect_uri={1}'
+            '&perms=basic_access,manage_library,delete_library'
+        )
+        self._url_token = (
+            'https://connect.deezer.com/oauth/access_token.php?app_id={0}'
+            '&secret={1}&code={2}&output=json'
+        )
+        self._url_redirect = 'http://localhost:{0}/authfinish'
+        self._url_check_token = (
+            'http://api.deezer.com/user/me?access_token={0}'
+        )
 
     @property
     def user(self):
