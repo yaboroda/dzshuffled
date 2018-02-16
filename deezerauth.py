@@ -16,13 +16,13 @@ class DeezerAuth(object):
     attach with each request to Deezer API
     """
 
-    URL_AUTH = ('https://connect.deezer.com/oauth/auth.php'
-                '?app_id={0}&redirect_uri={1}'
-                '&perms=basic_access,manage_library,delete_library')
-    ULR_TOKEN = ('https://connect.deezer.com/oauth/access_token.php'
-                 '?app_id={0}&secret={1}&code={2}&output=json')
-    URL_REDIRECT = 'http://localhost:{0}/authfinish'
-    URL_CHECK_TOKEN = 'http://api.deezer.com/user/me?access_token={0}'
+    _url_auth = ('https://connect.deezer.com/oauth/auth.php'
+                 '?app_id={0}&redirect_uri={1}'
+                 '&perms=basic_access,manage_library,delete_library')
+    _url_token = ('https://connect.deezer.com/oauth/access_token.php'
+                  '?app_id={0}&secret={1}&code={2}&output=json')
+    _url_redirect = 'http://localhost:{0}/authfinish'
+    _url_check_token = 'http://api.deezer.com/user/me?access_token={0}'
 
     def __init__(self):
         self._user = None
@@ -67,7 +67,7 @@ class DeezerAuth(object):
 
     def check_token(self):
         """Check auth token, fetching user info, return bool"""
-        url = self.URL_CHECK_TOKEN.format(self.token)
+        url = self._url_check_token.format(self.token)
         response = json.loads(requests.get(url).text)
 
         if 'error' in response:
@@ -80,8 +80,8 @@ class DeezerAuth(object):
 
     def _fetch_code(self):
         """Fetch auth app code, it will be used to get token."""
-        redirect = self.URL_REDIRECT.format(self._port)
-        webbrowser.open(self.URL_AUTH.format(self._app_id, redirect))
+        redirect = self._url_redirect.format(self._port)
+        webbrowser.open(self._url_auth.format(self._app_id, redirect))
         self._start_server()
         try:
             while True:
@@ -95,7 +95,7 @@ class DeezerAuth(object):
 
     def _fetch_token(self):
         """Fetch temporary auth token if you has auth code."""
-        url = self.ULR_TOKEN.format(self._app_id, self._secret, self.code)
+        url = self._url_token.format(self._app_id, self._secret, self.code)
         response = json.loads(requests.get(url).text)
 
         if 'access_token' in response:
