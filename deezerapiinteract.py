@@ -5,13 +5,68 @@ import requests
 
 
 class DeezerApiInteract(object):
-    """Send requests to Deezer api and get answers as dicts"""
+    """Send requests to Deezer api and get answers as dicts
+    before use, set valid auth token into self.token
+    """
 
     def __init__(self):
         self._base_url = 'http://api.deezer.com'
         self._limit_results_per_request = 500
 
-    def process_api_error(self, error_data):
+    def get_request(self, uri: str, response_type: str = 'single',
+                    params: Dict = {}):
+        """Send GET request to Deezer API, return Dict or bool
+
+        Keyword arguments:
+        uri -- address without domain
+        response_type -- 'single' or 'list'
+        params -- Dict with parameters to add to request (default {})
+        """
+        params = self._add_required_params(params)
+        response = requests.get(self._base_url + uri, params)
+        return self._prepare_response(response, response_type)
+
+    def get_request_strict(self, url: str, response_type: str = 'single'):
+        """Send GET request strictly by url, return bool or Dict
+
+        Url include domain and all parameters
+        response_type -- 'single' or 'list'
+        """
+        response = requests.get(url)
+        return self._prepare_response(response, response_type)
+
+    def post_request(self, uri: str, response_type: str = 'single',
+                     params: Dict = {}):
+        """Send POST request to Deezer API, return bool or Dict.
+
+        Keyword arguments:
+        uri -- address without domain
+        response_type -- 'single' or 'list'
+        params -- Dict with parameters to add to request (default {})
+        """
+        params = self._add_required_params(params)
+        response = requests.post(self._base_url + uri, params)
+        return self._prepare_response(response, response_type)
+
+    def delete_request(self, uri: str, response_type: str = 'single',
+                       params: Dict = {}):
+        """Send DELETE request to Deezer API, return bool or Dict.
+
+        Keyword arguments:
+        uri -- address without domain
+        response_type -- 'single' or 'list'
+        params -- Dict with parameters to add to request (default {})
+        """
+        params = self._add_required_params(params)
+        uri += '?access_token={0}'.format(params.pop('access_token'))
+
+        for p, val in params.items():
+            uri += '&{0}={1}'.format(p, val)
+
+        response = requests.delete(self._base_url + uri)
+        return self._prepare_response(response, response_type)
+
+    def _process_api_error(self, error_data: Dict):
         """Raise exception by error sesponse from Deezer.
 
         Keyword arguments:
@@ -22,7 +77,8 @@ class DeezerApiInteract(object):
         code = error_data['code'] if 'code' in error_data else None
         raise DeezerApiError(error_data['message'], code)
 
-    def prepare_response(self, response, response_type: str):
+    def _prepare_response(self, response: requests.models.Response,
+                          response_type: str):
         """Get data from response object.
 
         Keyword arguments:
@@ -36,7 +92,7 @@ class DeezerApiInteract(object):
             return response
 
         if 'error' in response:
-            return self.process_api_error(response['error'])
+            return self._process_api_error(response['error'])
 
         if response_type == 'list':
             if 'data' not in response:
@@ -58,7 +114,7 @@ class DeezerApiInteract(object):
                 ' it can be either single or list'.format(response_type)
             )
 
-    def add_required_params(self, params: Dict):
+    def _add_required_params(self, params: Dict):
         """Add token and limit to requests param. Return Dict"""
         if 'access_token' not in params:
             params['access_token'] = self.token
@@ -67,59 +123,6 @@ class DeezerApiInteract(object):
             params['limit'] = self._limit_results_per_request
 
         return params
-
-    def get_request(self, uri: str, response_type: str = 'single',
-                    params: Dict = {}):
-        """Send GET request to Deezer API, return Dict or bool
-
-        Keyword arguments:
-        uri -- address without domain
-        response_type -- 'single' or 'list'
-        params -- Dict with parameters to add to request (default {})
-        """
-        params = self.add_required_params(params)
-        response = requests.get(self._base_url + uri, params)
-        return self.prepare_response(response, response_type)
-
-    def get_request_strict(self, url: str, response_type: str = 'single'):
-        """Send GET request strictly by url, return bool or Dict
-
-        Url include domain and all parameters
-        response_type -- 'single' or 'list'
-        """
-        response = requests.get(url)
-        return self.prepare_response(response, response_type)
-
-    def post_request(self, uri: str, response_type: str = 'single',
-                     params: Dict = {}):
-        """Send POST request to Deezer API, return bool or Dict.
-
-        Keyword arguments:
-        uri -- address without domain
-        response_type -- 'single' or 'list'
-        params -- Dict with parameters to add to request (default {})
-        """
-        params = self.add_required_params(params)
-        response = requests.post(self._base_url + uri, params)
-        return self.prepare_response(response, response_type)
-
-    def delete_request(self, uri: str, response_type: str = 'single',
-                       params: Dict = {}):
-        """Send DELETE request to Deezer API, return bool or Dict.
-
-        Keyword arguments:
-        uri -- address without domain
-        response_type -- 'single' or 'list'
-        params -- Dict with parameters to add to request (default {})
-        """
-        params = self.add_required_params(params)
-        uri += '?access_token={0}'.format(params.pop('access_token'))
-
-        for p, val in params.items():
-            uri += '&{0}={1}'.format(p, val)
-
-        response = requests.delete(self._base_url + uri)
-        return self.prepare_response(response, response_type)
 
 
 class DeezerApiInteractError(Exception):

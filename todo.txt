@@ -1,4 +1,5 @@
  - rid of getters setters, make code more pythonish
+ - think about delete_request method
  - add timestamp to description of resetted playlist
  - maybe rid of fluent interfaces?
  - different scenario types?
