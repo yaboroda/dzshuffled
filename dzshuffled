@@ -17,7 +17,7 @@ from deezerauth import DeezerAuth
 from deezertool import DeezerTool
 from deezerapiinteract import DeezerApiInteract, DeezerApiError
 
-SCRIPT_VERSION = '1.2.1.0'
+SCRIPT_VERSION = '1.2.2.0'
 DEBUG_MODE = False
 pp = pprint.PrettyPrinter(indent=4)
 
@@ -96,6 +96,13 @@ def build_cli_parser():
     )
 
     parser.add_argument(
+        '--editor',
+        metavar='EDITOR',
+        default=None,
+        help=('edit config with passed program instead of editor from config')
+    )
+
+    parser.add_argument(
         '-d', '--debug',
         action='store_const',
         const=True,
@@ -149,8 +156,10 @@ def process_cli_scenario_call(scenario_input, dz_tool, info_flag=None):
         dz_tool.exec_scenario(scenario_name)
 
 
-def edit_config(config):
-    p = subprocess.Popen([config.get('system', 'editor'), config.path])
+def edit_config(config, editor=None):
+    if not editor:
+        editor = config.get('system', 'editor')
+    p = subprocess.Popen([editor, config.path])
     return p.wait()
 
 
@@ -171,7 +180,7 @@ def main():
             sys.exit()
 
         if args.edit:
-            edit_config(config)
+            edit_config(config, args.editor)
             sys.exit()
 
         if not args.scenario and not args.list:

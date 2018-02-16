@@ -101,7 +101,8 @@ to show help message run script without parameters
 ```sh
 $ dzshuffled
 
-usage: dzshuffled [-h] [-l] [-v] [-i] [--version] [SCENARIO]
+usage: dzshuffled [-h] [-l] [-v] [-i] [-e] [--editor EDITOR] [-d] [--version]
+                  [SCENARIO]
 
 This script will create playlist in your Deezer library consisting of shuffled
 tracks from your other playlists. Pass scenario name or number to create
@@ -110,15 +111,21 @@ config wich by default in ~/.config/dzshuffled/config.ini but you can reassign
 it with DZSHUFFLED_CONFIG_PATH environment variable.
 
 positional arguments:
-  SCENARIO       name or number of scenario. Pass -l argument to see full list
+  SCENARIO         name or number of scenario. Pass -l argument to see full
+                   list
 
 optional arguments:
-  -h, --help     show this help message and exit
-  -l, --list     show full list of scenarios to create playlist from, pass -v
-                 param to show info about them
-  -v, --verbous  if called with argument -l, show info about listed scenarios
-  -i, --info     show info about selected scenario but not do anithing
-  -e, --edit     edit config file vith editor specified in config, by default
-                 it is Vim
-  --version      show script version
+  -h, --help       show this help message and exit
+  -l, --list       show full list of scenarios to create playlist from, pass
+                   -v param to show info about them
+  -v, --verbous    if called with argument -l, show info about listed
+                   scenarios
+  -i, --info       show info about selected scenario but not do anithing
+  -e, --edit       edit config file vith editor specified in config, by
+                   default it is Vim
+  --editor EDITOR  edit config with passed program instead of editor from
+                   config
+  -d, --debug      debug mode for output full trace of exceptions
+  --version        show script version
+
 ```
