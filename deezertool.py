@@ -90,13 +90,14 @@ class DeezerTool(object):
         self.tracks = self.tracks[:limit]
         return self
 
-    def get_user(self):
+    @property
+    def user(self):
         """Get info about current user, return Dict."""
         return self.auth.user
 
     def create_playlist(self, title: str):
         """Create playlist with title in your Deezer library."""
-        uri = '/user/{0}/playlists'.format(self.get_user()['id'])
+        uri = '/user/{0}/playlists'.format(self.user['id'])
         response = self.api.post_request(uri, 'single', {'title': title})
         self.new_playlist_id = response['id']
         return self

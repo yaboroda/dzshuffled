@@ -25,8 +25,16 @@ class DeezerAuth(object):
     URL_CHECK_TOKEN = 'http://api.deezer.com/user/me?access_token={0}'
 
     def __init__(self):
-        self.user = None
+        self._user = None
         self.token = ''
+
+    @property
+    def user(self):
+        """Return Dict with user info"""
+        if self._user is None:
+            self._fetch_user()
+
+        return self._user
 
     def set_params(self, port, secret, app_id, token=''):
         """Set parameters for authorization.
@@ -41,46 +49,21 @@ class DeezerAuth(object):
         token -- auth token, if empty or invalid,
             it will be fetched (default '')
         """
-        self.port = int(port)
-        self.secret = secret
-        self.app_id = app_id
+        self._port = int(port)
+        self._secret = secret
+        self._app_id = app_id
         self.token = token
 
     def authorize(self):
         """Authorize and get token."""
-        if not self.app_id or not self.secret:
+        if not self._app_id or not self._secret:
             raise DeezerAuthError(
                 'You cant get authorization token without app_id '
                 'and secret. Fill it in config file or write there '
                 'valid token.'
             )
-        self.fetch_code()
-        self.fetch_token()
-
-    def fetch_code(self):
-        """Fetch auth app code, it will be used to get token."""
-        redirect = self.URL_REDIRECT.format(self.port)
-        webbrowser.open(self.URL_AUTH.format(self.app_id, redirect))
-        self.start_server()
-        try:
-            while True:
-                self.server.handle_request()
-        except _Authorization as auth:
-            self.code = auth.code
-
-    def start_server(self):
-        """Start web server to listen for response with auth code."""
-        self.server = _AuthorizationServer('localhost', self.port)
-
-    def fetch_token(self):
-        """Fetch temporary auth token if you has auth code."""
-        url = self.ULR_TOKEN.format(self.app_id, self.secret, self.code)
-        response = json.loads(requests.get(url).text)
-
-        if 'access_token' in response:
-            self.token = response['access_token']
-        else:
-            raise DeezerAuthError('Cant get token from deezer')
+        self._fetch_code()
+        self._fetch_token()
 
     def check_token(self):
         """Check auth token, fetching user info, return bool"""
@@ -90,25 +73,43 @@ class DeezerAuth(object):
         if 'error' in response:
             return False
         elif 'type' in response and response['type'] == 'user':
-            self.user = response
+            self._user = response
             return True
         else:
             raise DeezerAuthError('Cant check auth token')
 
-    def fetch_user(self):
+    def _fetch_code(self):
+        """Fetch auth app code, it will be used to get token."""
+        redirect = self.URL_REDIRECT.format(self._port)
+        webbrowser.open(self.URL_AUTH.format(self._app_id, redirect))
+        self._start_server()
+        try:
+            while True:
+                self.server.handle_request()
+        except _Authorization as auth:
+            self.code = auth.code
+
+    def _start_server(self):
+        """Start web server to listen for response with auth code."""
+        self.server = _AuthorizationServer('localhost', self._port)
+
+    def _fetch_token(self):
+        """Fetch temporary auth token if you has auth code."""
+        url = self.ULR_TOKEN.format(self._app_id, self._secret, self.code)
+        response = json.loads(requests.get(url).text)
+
+        if 'access_token' in response:
+            self.token = response['access_token']
+        else:
+            raise DeezerAuthError('Cant get token from deezer')
+
+    def _fetch_user(self):
         """Fetch info about logged in user. It heppens on token check.
-        Info stored in self.user
+        Info stored in self._user
         """
         if not self.check_token():
             raise DeezerAuthError('Cant fetch user info due failed'
                                   ' token check')
-
-    def get_user(self):
-        """Return Dict with user info"""
-        if self.user is None:
-            self.fetch_user()
-
-        return self.user
 
 
 class _AuthorizationServer(http.server.HTTPServer):
