@@ -4,7 +4,7 @@ from config import Config
 class DeezerConfig(Config):
     """Config class for DeezerTool object"""
 
-    def set_up_default_config(self):
+    def _set_up_default_config(self):
         """Sets up default config data."""
         self.cfg['system'] = {
             'port': '8090',
