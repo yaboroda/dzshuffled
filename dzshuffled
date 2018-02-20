@@ -17,7 +17,7 @@ from deezerauth import DeezerAuth
 from deezertool import DeezerTool
 from deezerapiinteract import DeezerApiInteract, DeezerApiError
 
-SCRIPT_VERSION = '1.2.2.0'
+SCRIPT_VERSION = '1.2.3.0'
 DEBUG_MODE = False
 pp = pprint.PrettyPrinter(indent=4)
 
