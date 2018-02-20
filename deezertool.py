@@ -1,6 +1,7 @@
 import re
 from random import shuffle
 from typing import Dict, List, Union
+from datetime import datetime
 
 from deezerconfig import DeezerConfig
 from deezerauth import DeezerAuth
@@ -167,6 +168,11 @@ class DeezerTool(object):
         """
         return self.add_tracks_to_playlist(self.new_playlist_id)
 
+    def set_playlists_desctiption(self, desctiption):
+        """Set description to playlist with id from self.target_playlist_id"""
+        uri = '/playlist/{0}'.format(self.target_playlist_id)
+        self.api.post_request(uri, 'single', {'description': desctiption})
+
     def reset_playlist_by_title(self, title):
         """Find playlist by title and remove all tracks from it.
 
@@ -196,6 +202,10 @@ class DeezerTool(object):
         else:
             self.create_playlist(title)
             self.target_playlist_id = self.new_playlist_id
+
+        self.set_playlists_desctiption(
+            'Resetted '+datetime.today().strftime('%H:%M %d.%m.%Y')
+        )
 
         return self
 
