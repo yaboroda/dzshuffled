@@ -1,6 +1,6 @@
  - rid of getters setters, make code more pythonish
+ - split DeezerTool class
  - think about delete_request method
- - add timestamp to description of resetted playlist
  - maybe rid of fluent interfaces?
  - different scenario types?
  - bash autocomplite scenario names
