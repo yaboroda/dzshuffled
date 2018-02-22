@@ -1,7 +1,7 @@
- - rid of getters setters, make code more pythonish
+ - finish deezerscenario module, think on global scheme of package
+ - update executable dezhuffled file
+ - check all type hinting
  - tests
- - split DeezerTool class
  - think about delete_request method
- - maybe rid of fluent interfaces?
  - different scenario types?
  - bash autocomplite scenario names
