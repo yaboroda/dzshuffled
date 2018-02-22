@@ -1,13 +1,14 @@
 # dzshuffled
 
-This script will create playlist in your Deezer library consisting of shuffled tracks from your other playlists. I write it to overcome track number limit for playlist. I have playlists for work work 1, work 2, work 3. And script select random 1000 tracks from all of them and make with it new playlist.
+This script will create playlist in your Deezer library consisting of shuffled tracks from your other playlists. I write it to overcome track number limit for playlist. I have playlists for work work 1, work 2, work 3. And script select random 1000 tracks from all of them and make with it new playlist.  
+
+This script writing on linux and for linux, but it works on windows too.
 
 #### requirements:  
- - linux
  - python3
  - python module [requests](http://docs.python-requests.org/en/master/user/install/)
 
-#### install  
+#### install on linux
 you can just download current version of script
 ```sh
 $ wget -O dzshuffled-master.zip https://github.com/yaboroda/dzshuffled/archive/master.zip;
@@ -25,6 +26,9 @@ then make symlink
 ```sh
 $ sudo ln -s $(pwd)/dzshuffled /usr/bin/dzshuffled
 ```
+
+#### install and use on windows
+Chapter in development. Write me if you need it and i will do it ASAP. Now it isn't my priority.
 
 #### register Deezer app
 To run this script you must register your own Deezer app and write Application ID and Secret Key in config.
