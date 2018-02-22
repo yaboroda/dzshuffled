@@ -12,10 +12,10 @@ import sys
 import argparse
 import subprocess
 
-from deezerconfig import DeezerConfig
-from deezerauth import DeezerAuth
-from deezertool import DeezerTool
-from deezerapiinteract import DeezerApiInteract, DeezerApiError
+from dztoolset.deezerconfig import DeezerConfig
+from dztoolset.deezerauth import DeezerAuth
+from dztoolset.deezertool import DeezerTool
+from dztoolset.deezerapiinteract import DeezerApiInteract, DeezerApiError
 
 SCRIPT_VERSION = '1.2.3.0'
 DEBUG_MODE = False

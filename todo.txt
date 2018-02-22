@@ -1,4 +1,5 @@
  - rid of getters setters, make code more pythonish
+ - tests
  - split DeezerTool class
  - think about delete_request method
  - maybe rid of fluent interfaces?

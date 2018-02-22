@@ -3,9 +3,9 @@ from random import shuffle
 from typing import Dict, List, Union
 from datetime import datetime
 
-from deezerconfig import DeezerConfig
-from deezerauth import DeezerAuth
-from deezerapiinteract import DeezerApiInteract
+from dztoolset.deezerconfig import DeezerConfig
+from dztoolset.deezerauth import DeezerAuth
+from dztoolset.deezerapiinteract import DeezerApiInteract
 
 
 class DeezerTool(object):

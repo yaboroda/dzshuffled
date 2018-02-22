@@ -1,4 +1,4 @@
-from config import Config
+from dztoolset.config import Config
 
 
 class DeezerConfig(Config):
