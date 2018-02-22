@@ -19,8 +19,6 @@ class DeezerTool(object):
         self._limit_tracks = 1000
         self._limit_items_delete_per_request = 500
 
-        self.playlists = []
-        self.tracks = []
         self.config = config
         self.auth = auth
         self.auth.set_params(config.get('system', 'port'),
@@ -38,10 +36,20 @@ class DeezerTool(object):
     def check_and_update_token(self):
         """Check auth token and update it if not valid."""
         if not self.auth.check_token():
-            self.update_token()
+            self._update_token()
         return self
 
-    def update_token(self):
+    def get_all_play_lists(self):
+        """Fetch info about all playlists, return list of Dicts."""
+        playlists = self.api.get_request('/user/me/playlists', 'list')
+        return playlists
+
+    def get_tracks_from_playlist(self, playlist_id: int):
+        uri = '/playlist/{0}/tracks'.format(playlist_id)
+        tracks = self.api.get_request(uri, 'list')
+        return tracks
+
+    def _update_token(self):
         """Authorize in Deezer and write new token in config file."""
         self.auth.authorize()
 
@@ -53,20 +61,7 @@ class DeezerTool(object):
 
         return self
 
-    def filter_playlists_by_titles(self, titles: Union[List, str]):
-        """Remove from self.playlisits those items
-        which titles does not listed in `titles` param.
-        """
-        if isinstance(titles, str):
-            titles = [titles]
-
-        self.playlists = [pl for pl in self.playlists if pl['title'] in titles]
-        return self
-
-    def find_all_play_lists(self):
-        """Fetch info about all playlists and store it in self.playlists."""
-        self.playlists = self.api.get_request('/user/me/playlists', 'list')
-        return self
+    
 
     def find_tracks_by_playlists(self):
         """Fetch info about all tracks, listed in playlists from
@@ -74,8 +69,7 @@ class DeezerTool(object):
         """
         self.tracks = []
         for pl in self.playlists:
-            uri = '/playlist/{0}/tracks'.format(pl['id'])
-            tracks = self.api.get_request(uri, 'list')
+            tracks = self.get_tracks_from_playlist(pl['id'])
             self.tracks += tracks
 
         return self
@@ -173,126 +167,7 @@ class DeezerTool(object):
         uri = '/playlist/{0}'.format(self.target_playlist_id)
         self.api.post_request(uri, 'single', {'description': desctiption})
 
-    def reset_playlist_by_title(self, title):
-        """Find playlist by title and remove all tracks from it.
-
-        If there is several pl with title, it will remove them all
-        and create one new.
-        If there is no pl with title, it will create one.
-        Cleared or created playlists id will be stored
-        in self.target_playlist_id
-        """
-
-        # find all playlists by title
-        self.find_all_play_lists().filter_playlists_by_titles(title)
-
-        # if there is more then one, remove it and create new
-        if len(self.playlists) > 1:
-            self.remove_playlist_by_title(title)
-            self.create_playlist(title)
-            self.target_playlist_id = self.new_playlist_id
-
-        # if there is only one, delete all tracks from it
-        elif len(self.playlists) == 1:
-            self.target_playlist_id = self.playlists[0]['id']
-            self.find_tracks_by_playlists()
-            self.purge_playlist_by_id(self.target_playlist_id)
-
-        # if there is no one, create new
-        else:
-            self.create_playlist(title)
-            self.target_playlist_id = self.new_playlist_id
-
-        self.set_playlists_desctiption(
-            'Resetted '+datetime.today().strftime('%H:%M %d.%m.%Y')
-        )
-
-        return self
-
-    def check_for_presence_of_playlist_by_title(self, title,
-                                                raise_exception: bool = False):
-        """Check if playlist with title present in self.playlists"""
-        for pl in self.playlists:
-            if pl['title'] == title:
-                return True
-
-        # if reach here, title was not found
-        if raise_exception:
-            raise DeezerToolError('Playlist {0} was not found.'.format(title))
-        else:
-            return False
-
-    def check_for_presence_of_playlists(self, source_pls: Dict,
-                                        raise_exception: bool = False):
-        """Check if all titles from source_pls presence in self.playlists"""
-        if isinstance(source_pls, str):
-            source_pls = [source_pls]
-
-        missingPls = [pl for pl in source_pls
-                      if not self.check_for_presence_of_playlist_by_title(pl)]
-
-        if missingPls:
-            result = False
-        else:
-            result = True
-
-        if not result and raise_exception:
-            raise DeezerToolError(
-                'Cant find playlists: "{0}"'.format('", "'.join(missingPls))
-            )
-        else:
-            return result
-
-    def reset_shuffled_playlist(self, title: str, source_pls: List,
-                                limit: int = None):
-        """Create shuffled playlist with `title`.
-
-        If it exests then purge it from tracks,
-        then populate it from your playlists wich titles listed
-        in `source_pls`, shufflig them before it
-        """
-
-        print('Resetting playlist {0}'.format(title))
-
-        # reset playlist and write its id to self.target_playlist_id
-        self.reset_playlist_by_title(title)
-
-        # check if playlists from source_pls presence in library
-        # find all tracks from playlists from source_pls,
-        # suffle it and cut to limit, then shove to target playlist
-        self.find_all_play_lists()
-        self.check_for_presence_of_playlists(source_pls, True)
-        self.filter_playlists_by_titles(source_pls)
-
-        print('Finding all tracks from playlists: '
-              + ', '.join([pl['title'] for pl in self.playlists]))
-
-        self.find_tracks_by_playlists()
-
-        tracks_count = len(self.tracks)
-        print('Found {0} tracks'.format(str(tracks_count)))
-
-        # rid of duplicates
-        self.rid_of_double_tracks()
-        new_tracks_count = len(self.tracks)
-        tracks_count_delta = tracks_count - new_tracks_count
-
-        if tracks_count_delta > 0:
-            print('Rid of {0} duplicates, {1} tracks left'
-                  .format(tracks_count_delta, new_tracks_count))
-
-        print('Shuffling')
-        self.shuffle_tracks()
-        self.filter_tracks_by_limit(limit)
-
-        print('Adding {0} tracks to playlist {1}'
-              .format(str(len(self.tracks)), title))
-
-        self.add_tracks_to_playlist(self.target_playlist_id)
-
-        print('Done')
-
-        return self
+    
 
     def get_string_of_ids(self, items_list: List[Dict]):
         """Get string of id of items in list."""
