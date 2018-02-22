@@ -1,4 +1,3 @@
-import re
 from random import shuffle
 from typing import Dict, List, Union
 from datetime import datetime
@@ -13,19 +12,18 @@ class DeezerTool(object):
     All actions related only to playlists and tracks, that added to it
     """
 
-    def __init__(self, config: DeezerConfig, auth: DeezerAuth,
-                 api: DeezerApi):
+    def __init__(self, config_path):
         self._valid_scenario_types = ['shuffled']
-        self._limit_tracks = 1000
-        self._limit_items_delete_per_request = 500
+        self._limit_items_delete = 500
+        self._myplaylists = None
 
-        self.config = config
-        self.auth = auth
-        self.auth.set_params(config.get('system', 'port'),
-                             config.get('auth', 'secret'),
-                             config.get('auth', 'app_id'),
-                             config.get('auth', 'token'))
-        self.api = api
+        self.config = DeezerConfig(config_path)
+        self.auth = DeezerAuth()
+        self.api = DeezerApi()
+        self.auth.set_params(self.config.get('system', 'port'),
+                             self.config.get('auth', 'secret'),
+                             self.config.get('auth', 'app_id'),
+                             self.config.get('auth', 'token'))
         self.api.token = config.get('auth', 'token')
 
     @property
@@ -39,10 +37,17 @@ class DeezerTool(object):
             self._update_token()
         return self
 
-    def get_all_play_lists(self):
-        """Fetch info about all playlists, return list of Dicts."""
-        playlists = self.api.get_request('/user/me/playlists', 'list')
-        return playlists
+    def get_my_playlists(self, forced: bool = False):
+        """Request all playlists from Deezer and cache it.
+
+        On next calls playlists will be returned from cache.
+        For forced request pass forced param.
+        """
+        if forced or not self._allplaylists:
+            self._myplaylists = self.api.get_request('/user/me/playlists',
+                                                     'list')
+
+        return self._allplaylists
 
     def get_tracks_from_playlist(self, playlist_id: int):
         uri = '/playlist/{0}/tracks'.format(playlist_id)
@@ -61,175 +66,52 @@ class DeezerTool(object):
 
         return self
 
-    
-
-    def find_tracks_by_playlists(self):
-        """Fetch info about all tracks, listed in playlists from
-        self.playlists and store it in self.tracks.
-        """
-        self.tracks = []
-        for pl in self.playlists:
-            tracks = self.get_tracks_from_playlist(pl['id'])
-            self.tracks += tracks
-
-        return self
-
-    def shuffle_tracks(self):
-        """Shuffle self.tracks."""
-        shuffle(self.tracks)
-        return self
-
-    def filter_tracks_by_limit(self, limit: int = None):
-        """Left only first `limit` items from self.tracks,
-        removing the rest. If limit is None
-        than limit getting from self._limit_tracks.
-        """
-        if limit is None:
-            limit = self._limit_tracks
-
-        self.tracks = self.tracks[:limit]
-        return self
-
     def create_playlist(self, title: str):
-        """Create playlist with title in your Deezer library."""
+        """Create playlist with title in your Deezer library.
+        Return id of new playlist
+        """
         uri = '/user/{0}/playlists'.format(self.user['id'])
         response = self.api.post_request(uri, 'single', {'title': title})
-        self.new_playlist_id = response['id']
-        return self
+        new_playlist_id = response['id']
+        return new_playlist_id
 
-    def remove_playlist_by_id(self, id):
+    def remove_playlist(self, id):
         """Remove playlist from your library by id.
-
-        It will not warning you or ask, so think carefully
+        It will not warning you or ask, so think carefully.
+        Return bool
         """
         uri = '/playlist/{0}'.format(id)
-        self.api.delete_request(uri, 'single')
-        return self
+        response = self.api.delete_request(uri, 'single')
+        return response
 
-    def purge_playlist_by_id(self, id):
+    def purge_playlist(self, id):
         """Remove all tracks from playlist by id.
-
         It will not warning you or ask, so think carefully.
         """
         uri = '/playlist/{0}/tracks'.format(id)
-        groups = self.get_string_of_ids_by_groups(
-            self.tracks,
-            self._limit_items_delete_per_request
+        track_ids = [track['id'] for track in self.get_tracks_from_playlist(id)]
+
+        for chank in self._split_list_by_chanks(track_ids,
+                                                self._limit_items_delete):
+            self.api.delete_request(uri, 'single', {'songs': ','.join(chank)})
+
+    def add_tracks_to_playlist(self, track_ids: List[int], playlist_id: int):
+        """Add tracks by ids to playlist, return bool."""
+        uri = '/playlist/{0}/tracks'.format(playlist_id)
+        response = self.api.post_request(
+            uri, 'single', {'songs': ','.join(track_ids)}
         )
-
-        for track_ids in groups:
-            self.api.delete_request(uri, 'single', {'songs': track_ids})
-
-    def purge_playlist_by_title(self, title):
-        """Remove all tracks from all playlists with this title.
-
-        It will not warning you or ask, so think carefully
-        """
-        (self.find_all_play_lists()
-            .filter_playlists_by_titles(title)
-            .find_tracks_by_playlists())
-
-        for pl in self.playlists:
-            self.purge_playlist_by_id(pl['id'])
-
-    def remove_playlist_by_title(self, title: str):
-        """Remove all playlists from your library with this title.
-
-        It will not warning you or ask, so think carefully
-        """
-        self.find_all_play_lists()
-        self.filter_playlists_by_titles([title])
-
-        for pl in self.playlists:
-            self.remove_playlist_by_id(pl['id'])
-
-        self.playlists = []
-        return self
-
-    def add_tracks_to_playlist(self, id):
-        """Add tracks from self.tracks to playlist with this id,
-        return bool.
-        """
-        uri = '/playlist/{0}/tracks'.format(id)
-        track_ids = self.get_string_of_ids(self.tracks)
-        response = self.api.post_request(uri, 'single', {'songs': track_ids})
         return response
 
-    def add_tracks_to_new_playlist(self) -> bool:
-        """Add tracks from self.tracks to playlist that was just created.
-
-        (it takes id from self.new_playlist_id)
-        """
-        return self.add_tracks_to_playlist(self.new_playlist_id)
-
-    def set_playlists_desctiption(self, desctiption):
+    def set_playlist_desctiption(self, playlist_id: int, desctiption: str):
         """Set description to playlist with id from self.target_playlist_id"""
-        uri = '/playlist/{0}'.format(self.target_playlist_id)
+        uri = '/playlist/{0}'.format(playlist_id)
         self.api.post_request(uri, 'single', {'description': desctiption})
 
-    
-
-    def get_string_of_ids(self, items_list: List[Dict]):
-        """Get string of id of items in list."""
-        items_ids = ','.join([str(item['id']) for item in items_list])
-        return items_ids
-
-    def get_string_of_ids_by_groups(self, items_list: List[Dict], limit: int):
-        """Get list of strings of id of items in list,
-        splitted by limit in each string, return List of str
-        """
-        groups = []
+    def _split_list_by_chanks(self, list: List, chank_size: int):
+        """Generator splits list by chnks of chank_size elements."""
         for i in range(0, len(items_list), limit):
-            groups.append(self.get_string_of_ids(items_list[i:i+limit]))
-
-        return groups
-
-    def check_scenario_name_valid(self, scenario_name: str,
-                                  raise_exception: bool = False):
-        """Check if scenario_name is valid name for scenario, return bool
-
-        If raise_exception is True, then instad of returning False
-        it will raise exception.
-        """
-        check = bool(re.search('^pl_', scenario_name))
-
-        if raise_exception and not check:
-            raise DeezerToolError('Invalid scenario name: "{}"'
-                                  .format(scenario_name))
-        else:
-            return check
-
-    def exec_scenario(self, scenario):
-        """Execute scenrio from config by its name."""
-        self.check_scenario_name_valid(scenario, True)
-
-        scenario_config = self.config.get(scenario)
-
-        if 'type' not in scenario_config or not scenario_config['type'] \
-                or scenario_config['type'] not in self._valid_scenario_types:
-            raise DeezerToolError('Scenario config section must'
-                                  ' contain valid type option')
-
-        if 'title' not in scenario_config or not scenario_config['title']:
-            raise DeezerToolError('Scenario config section must'
-                                  ' contain title option')
-        else:
-            title = scenario_config['title']
-
-        if 'source' not in scenario_config or not scenario_config['source']:
-            raise DeezerToolError('Scenario config section must'
-                                  ' contain source option')
-        else:
-            source_pls = scenario_config['source'].split(', ')
-
-        if 'limit' in scenario_config:
-            limit = int(scenario_config['limit'])
-        else:
-            limit = None
-
-        self.reset_shuffled_playlist(title, source_pls, limit)
-
-        return self
+            yield list[i:i+limit]
 
     def get_list_of_scenarios(self):
         """Get list of scenarios names from config, return List of str"""

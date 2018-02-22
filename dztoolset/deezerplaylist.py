@@ -1,23 +1,14 @@
 from typing import Dict, List, Union
+from random import shuffle
+
+from dztoolset.deezertool import DeezerTool
 
 
 class DeezerPlaylist(object):
     """Manage Deezer playlists"""
 
-    def __init__(self, dztool):
-        self._dztool = dztool
-        self._allplaylists = None
-
-    def get_all_playlists(self, forced: bool = False):
-        """Request all playlists from Deezer and cache it.
-
-        On next calls playlists will be returned from cache.
-        For forced request pass forced param.
-        """
-        if forced or not self._allplaylists:
-            self._allplaylists = sefl._dztool.get_playlists()
-
-        return self._allplaylists
+    def __init__(self, config_path):
+        self._dztool = DeezerTool(config_path)
 
     def make_shuffled_playlist(self, title: str, source_pls: List,
                                 limit: int):
@@ -40,34 +31,40 @@ class DeezerPlaylist(object):
         # check if playlists from source_pls presence in library
         # find all tracks from playlists from source_pls,
         # suffle it and cut to limit, then shove to target playlist
-        self.check_for_presence_of_playlists(source_pls, True)
-        self.filter_playlists_by_titles(source_pls)
+        self.check_for_absence_of_playlists(source_pls, True)
+        playlists = self.get_playlists_by_titles(source_pls)
 
         print('Finding all tracks from playlists: '
               + ', '.join([pl['title'] for pl in self.playlists]))
 
-        self.find_tracks_by_playlists()
+        tracks = set()
+        duplicates_count = 0
+        tracks_count = 0
 
-        tracks_count = len(self.tracks)
-        print('Found {0} tracks'.format(str(tracks_count)))
+        for pl in playlists:
+            for track in self._dztool.get_tracks_from_playlist(pl['id']):
+                tracks_count += 1
+                if track['id'] not in tracks:
+                    tracks.add(track['id'])
+                else:
+                    duplicates_count += 1
 
-        # rid of duplicates
-        self.rid_of_double_tracks()
-        new_tracks_count = len(self.tracks)
-        tracks_count_delta = tracks_count - new_tracks_count
+        print('Found {0} tracks'.format(tracks_count))
 
-        if tracks_count_delta > 0:
+        if duplicates_count > 0:
             print('Rid of {0} duplicates, {1} tracks left'
-                  .format(tracks_count_delta, new_tracks_count))
+                  .format(duplicates_count, len(tracks)))
+
+        tracks = list(tracks)
 
         print('Shuffling')
-        self.shuffle_tracks()
-        self.filter_tracks_by_limit(limit)
+        shuffle(tracks)
+        tracks = tracks[:limit]
 
         print('Adding {0} tracks to playlist {1}'
               .format(str(len(self.tracks)), title))
 
-        self.add_tracks_to_playlist(self.target_playlist_id)
+        self._dztool.add_tracks_to_playlist(tracks, target_playlist_id)
 
         print('Done')
 
@@ -79,29 +76,29 @@ class DeezerPlaylist(object):
         if isinstance(titles, str):
             titles = [titles]
 
-        playlists = [pl for pl in self.get_all_playlists()
+        playlists = [pl for pl in self._dztool.get_my_playlists()
                      if pl['title'] in titles]
         return playlists
 
-    def check_for_presence_of_playlists(self, target_titles: List[str],
+    def check_for_absence_of_playlists(self, target_titles: List[str],
                                         raise_exception: bool = False):
-        """Check if playlist with title present in self.playlists"""
-        all_titles = [pl['title'] for pl in self.get_all_playlists()]
+        """Check if playlists with title absence in library.
+
+        Returns list of missing titles or raise exception.
+        If all titles presence return empty list.
+        """
+        all_titles = [pl['title'] for pl in self._dztool.get_my_playlists()]
 
         missing_titles = [title for title in target_titles
                           if title not in all_titles]
 
-        if not missing_titles:
-            return True
-
-        # if reach here, title was not found
-        elif raise_exception:
+        if missing_titles and raise_exception:
             raise DeezerPlaylistError(
                 'Cant find playlists: "{0}"'
                 .format('", "'.join(missing_titles))
             )
         else:
-            return False
+            return missing_titles
 
     def reset_playlist_by_title(self, title: str):
         """Find playlist by title and remove all tracks from it.
@@ -131,6 +128,67 @@ class DeezerPlaylist(object):
             target_playlist_id = self._dztool.create_playlist(title)
 
         return target_playlist_id
+
+    def exec_scenario(self, scenario):
+        """Execute scenrio from config by its name."""
+        self._check_scenario_name_valid(scenario, True)
+
+        scenario_config = self.config.get(scenario)
+
+        if 'type' not in scenario_config or not scenario_config['type'] \
+                or scenario_config['type'] not in self._valid_scenario_types:
+            raise DeezerPlaylistError('Scenario config section must'
+                                      ' contain valid type option')
+
+        if 'title' not in scenario_config or not scenario_config['title']:
+            raise DeezerPlaylistError('Scenario config section must'
+                                      ' contain title option')
+        else:
+            title = scenario_config['title']
+
+        if 'source' not in scenario_config or not scenario_config['source']:
+            raise DeezerPlaylistError('Scenario config section must'
+                                      ' contain source option')
+        else:
+            source_pls = scenario_config['source'].split(', ')
+
+        if 'limit' in scenario_config:
+            limit = int(scenario_config['limit'])
+        else:
+            limit = None
+
+        self.reset_shuffled_playlist(title, source_pls, limit)
+
+        return self
+
+        def _check_scenario_name_valid(self, scenario_name: str,
+                                      raise_exception: bool = False):
+            """Check if scenario_name is valid name for scenario, return bool
+
+            If raise_exception is True, then instad of returning False
+            it will raise exception.
+            """
+            check = bool(re.search('^pl_', scenario_name))
+
+            if raise_exception and not check:
+                raise Exception('Invalid scenario name: "{}"'.format(scenario_name))
+            else:
+                return check
+
+    def _rid_of_duplicates(self, list_of_dicts: List[Dict],
+                                       field: str):
+        """Remove duplicates from list_of_dicts,
+        comparig them by field argument.
+        """
+        new_list = []
+        unique_vals = []
+
+        for el in list_of_dicts:
+            if el[field] not in unique_vals:
+                unique_vals.append(el[field])
+                new_list.append(el)
+
+        return new_list
 
 
 class DeezerPlaylistError(Exception):
