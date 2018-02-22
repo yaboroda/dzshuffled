@@ -4,7 +4,7 @@ from typing import Dict
 import requests
 
 
-class DeezerApiInteract(object):
+class DeezerApi(object):
     """Send requests to Deezer api and get answers as dicts
     before use, set valid auth token into self.token
     """
@@ -96,7 +96,7 @@ class DeezerApiInteract(object):
 
         if response_type == 'list':
             if 'data' not in response:
-                raise DeezerApiInteractError('Error occured on request'
+                raise DeezerApiError('Error occured on request'
                                              ' to Deezer api')
 
             nextPages = []
@@ -109,7 +109,7 @@ class DeezerApiInteract(object):
             return response
 
         else:
-            raise DeezerApiInteractError(
+            raise DeezerApiError(
                 'Unknown response type "{0}",'
                 ' it can be either single or list'.format(response_type)
             )
@@ -125,11 +125,11 @@ class DeezerApiInteract(object):
         return params
 
 
-class DeezerApiInteractError(Exception):
+class DeezerApiError(Exception):
     pass
 
 
-class DeezerApiError(DeezerApiInteractError):
+class DeezerApiRequestError(DeezerApiError):
     def __init__(self, message, code):
         codeStr = 'code '+str(code) if code else ''
         exc_message = 'Deezer API error {1}: {0}'.format(message, codeStr)

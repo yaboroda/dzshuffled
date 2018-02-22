@@ -5,7 +5,7 @@ from datetime import datetime
 
 from dztoolset.deezerconfig import DeezerConfig
 from dztoolset.deezerauth import DeezerAuth
-from dztoolset.deezerapiinteract import DeezerApiInteract
+from dztoolset.deezerapi import DeezerApi
 
 
 class DeezerTool(object):
@@ -13,12 +13,12 @@ class DeezerTool(object):
     All actions related only to playlists and tracks, that added to it
     """
 
-    VALID_SCENARIO_TYPES = ['shuffled']
-    LIMIT_TRACKS = 1000
-    LIMIT_ITEMS_DELETE_PER_ONE_REQUEST = 500
-
     def __init__(self, config: DeezerConfig, auth: DeezerAuth,
-                 api: DeezerApiInteract):
+                 api: DeezerApi):
+        self._valid_scenario_types = ['shuffled']
+        self._limit_tracks = 1000
+        self._limit_items_delete_per_request = 500
+
         self.playlists = []
         self.tracks = []
         self.config = config
@@ -29,6 +29,11 @@ class DeezerTool(object):
                              config.get('auth', 'token'))
         self.api = api
         self.api.token = config.get('auth', 'token')
+
+    @property
+    def user(self):
+        """Get info about current user, return Dict."""
+        return self.auth.user
 
     def check_and_update_token(self):
         """Check auth token and update it if not valid."""
@@ -83,18 +88,13 @@ class DeezerTool(object):
     def filter_tracks_by_limit(self, limit: int = None):
         """Left only first `limit` items from self.tracks,
         removing the rest. If limit is None
-        than limit getting from self.LIMIT_TRACKS.
+        than limit getting from self._limit_tracks.
         """
         if limit is None:
-            limit = self.LIMIT_TRACKS
+            limit = self._limit_tracks
 
         self.tracks = self.tracks[:limit]
         return self
-
-    @property
-    def user(self):
-        """Get info about current user, return Dict."""
-        return self.auth.user
 
     def create_playlist(self, title: str):
         """Create playlist with title in your Deezer library."""
@@ -120,7 +120,7 @@ class DeezerTool(object):
         uri = '/playlist/{0}/tracks'.format(id)
         groups = self.get_string_of_ids_by_groups(
             self.tracks,
-            self.LIMIT_ITEMS_DELETE_PER_ONE_REQUEST
+            self._limit_items_delete_per_request
         )
 
         for track_ids in groups:
@@ -331,7 +331,7 @@ class DeezerTool(object):
         scenario_config = self.config.get(scenario)
 
         if 'type' not in scenario_config or not scenario_config['type'] \
-                or scenario_config['type'] not in self.VALID_SCENARIO_TYPES:
+                or scenario_config['type'] not in self._valid_scenario_types:
             raise DeezerToolError('Scenario config section must'
                                   ' contain valid type option')
 
