@@ -54,18 +54,6 @@ class DeezerTool(object):
         tracks = self.api.get_request(uri, 'list')
         return tracks
 
-    def _update_token(self):
-        """Authorize in Deezer and write new token in config file."""
-        self.auth.authorize()
-
-        if self.auth.check_token():
-            self.config.set('auth', 'token', self.auth.token)
-            self.api.token = self.config.get('auth', 'token')
-        else:
-            raise DeezerToolError('Cant verify new token')
-
-        return self
-
     def create_playlist(self, title: str):
         """Create playlist with title in your Deezer library.
         Return id of new playlist
@@ -89,7 +77,8 @@ class DeezerTool(object):
         It will not warning you or ask, so think carefully.
         """
         uri = '/playlist/{0}/tracks'.format(id)
-        track_ids = [track['id'] for track in self.get_tracks_from_playlist(id)]
+        track_ids = [track['id'] for track
+                     in self.get_tracks_from_playlist(id)]
 
         for chank in self._split_list_by_chanks(track_ids,
                                                 self._limit_items_delete):
@@ -113,57 +102,17 @@ class DeezerTool(object):
         for i in range(0, len(items_list), limit):
             yield list[i:i+limit]
 
-    def get_list_of_scenarios(self):
-        """Get list of scenarios names from config, return List of str"""
-        scenarios = [key for key, val in self.config.get().items()
-                     if self.check_scenario_name_valid(key)]
+    def _update_token(self):
+        """Authorize in Deezer and write new token in config file."""
+        self.auth.authorize()
 
-        return scenarios
-
-    def get_scenario_name_by_index(self, n: int):
-        """Get scenarios name by it order number in config, return str"""
-        scenarios = self.get_list_of_scenarios()
-        if len(scenarios) > n:
-            return scenarios[n]
+        if self.auth.check_token():
+            self.config.set('auth', 'token', self.auth.token)
+            self.api.token = self.config.get('auth', 'token')
         else:
-            raise DeezerToolError(
-                'There is no scenario number {0}. Max number is {1}'
-                .format(n, len(scenarios)-1)
-            )
+            raise DeezerToolError('Cant verify new token')
 
-    def get_scenario_index_by_name(self, scenario):
-        """Get scenario order number by it name, return int."""
-        scenarios = self.get_list_of_scenarios()
-        if scenario in scenarios:
-            return scenarios.index(scenario)
-        else:
-            raise DeezerToolError('There is no scenario "{0}"'
-                                  .format(scenario))
-
-    def get_scenario_config(self, scenario: str):
-        """Get scenario config, return Dict."""
-        if self.check_scenario_name_valid(scenario, True):
-            return self.config.get(scenario)
-
-    def rid_of_double_tracks(self):
-        """Remove duplicated items from self.tracks."""
-        self.tracks = self.rid_of_doubles_in_list_of_dict(self.tracks)
         return self
-
-    def rid_of_doubles_in_list_of_dict(self, list_of_dict: List[Dict],
-                                       field: str = 'id'):
-        """Remove duplicates from list_of_dict,
-        comparig them by field argument.
-        """
-        new_list = []
-        unique_vals = []
-
-        for el in list_of_dict:
-            if el[field] not in unique_vals:
-                unique_vals.append(el[field])
-                new_list.append(el)
-
-        return new_list
 
 
 class DeezerToolError(Exception):

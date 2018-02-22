@@ -129,38 +129,6 @@ class DeezerPlaylist(object):
 
         return target_playlist_id
 
-    def exec_scenario(self, scenario):
-        """Execute scenrio from config by its name."""
-        self._check_scenario_name_valid(scenario, True)
-
-        scenario_config = self.config.get(scenario)
-
-        if 'type' not in scenario_config or not scenario_config['type'] \
-                or scenario_config['type'] not in self._valid_scenario_types:
-            raise DeezerPlaylistError('Scenario config section must'
-                                      ' contain valid type option')
-
-        if 'title' not in scenario_config or not scenario_config['title']:
-            raise DeezerPlaylistError('Scenario config section must'
-                                      ' contain title option')
-        else:
-            title = scenario_config['title']
-
-        if 'source' not in scenario_config or not scenario_config['source']:
-            raise DeezerPlaylistError('Scenario config section must'
-                                      ' contain source option')
-        else:
-            source_pls = scenario_config['source'].split(', ')
-
-        if 'limit' in scenario_config:
-            limit = int(scenario_config['limit'])
-        else:
-            limit = None
-
-        self.reset_shuffled_playlist(title, source_pls, limit)
-
-        return self
-
         def _check_scenario_name_valid(self, scenario_name: str,
                                       raise_exception: bool = False):
             """Check if scenario_name is valid name for scenario, return bool
