@@ -1,6 +1,7 @@
 from random import shuffle
 from typing import Dict, List, Union
-from datetime import datetime
+
+from icecream import ic
 
 from dztoolset.deezerconfig import DeezerConfig
 from dztoolset.deezerauth import DeezerAuth
@@ -12,12 +13,11 @@ class DeezerTool(object):
     All actions related only to playlists and tracks, that added to it
     """
 
-    def __init__(self, config_path):
-        self._valid_scenario_types = ['shuffled']
+    def __init__(self, config):
         self._limit_items_delete = 500
         self._myplaylists = None
 
-        self.config = DeezerConfig(config_path)
+        self.config = config
         self.auth = DeezerAuth()
         self.api = DeezerApi()
         self.auth.set_params(self.config.get('system', 'port'),
@@ -43,11 +43,11 @@ class DeezerTool(object):
         On next calls playlists will be returned from cache.
         For forced request pass forced param.
         """
-        if forced or not self._allplaylists:
+        if forced or not self._myplaylists:
             self._myplaylists = self.api.get_request('/user/me/playlists',
                                                      'list')
 
-        return self._allplaylists
+        return self._myplaylists
 
     def get_tracks_from_playlist(self, playlist_id: int):
         uri = '/playlist/{0}/tracks'.format(playlist_id)
@@ -77,16 +77,18 @@ class DeezerTool(object):
         It will not warning you or ask, so think carefully.
         """
         uri = '/playlist/{0}/tracks'.format(id)
-        track_ids = [track['id'] for track
+        track_ids = [str(track['id']) for track
                      in self.get_tracks_from_playlist(id)]
 
-        for chank in self._split_list_by_chanks(track_ids,
-                                                self._limit_items_delete):
+        for chank in self._split_list_by_chanks(
+            track_ids, self._limit_items_delete
+        ):
             self.api.delete_request(uri, 'single', {'songs': ','.join(chank)})
 
     def add_tracks_to_playlist(self, track_ids: List[int], playlist_id: int):
         """Add tracks by ids to playlist, return bool."""
         uri = '/playlist/{0}/tracks'.format(playlist_id)
+        track_ids = [str(track_id) for track_id in track_ids]
         response = self.api.post_request(
             uri, 'single', {'songs': ','.join(track_ids)}
         )
@@ -97,10 +99,10 @@ class DeezerTool(object):
         uri = '/playlist/{0}'.format(playlist_id)
         self.api.post_request(uri, 'single', {'description': desctiption})
 
-    def _split_list_by_chanks(self, list: List, chank_size: int):
+    def _split_list_by_chanks(self, items_list: List, chank_size: int):
         """Generator splits list by chnks of chank_size elements."""
-        for i in range(0, len(items_list), limit):
-            yield list[i:i+limit]
+        for i in range(0, len(items_list), chank_size):
+            yield items_list[i:i+chank_size]
 
     def _update_token(self):
         """Authorize in Deezer and write new token in config file."""

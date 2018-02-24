@@ -1,5 +1,6 @@
 from typing import Dict, List, Union
 from random import shuffle
+from datetime import datetime
 
 from dztoolset.deezertool import DeezerTool
 
@@ -7,11 +8,15 @@ from dztoolset.deezertool import DeezerTool
 class DeezerPlaylist(object):
     """Manage Deezer playlists"""
 
-    def __init__(self, config_path):
-        self._dztool = DeezerTool(config_path)
+    def __init__(self, config):
+        self._dztool = DeezerTool(config)
+
+    def check_and_update_token(self):
+        self._dztool.check_and_update_token()
 
     def make_shuffled_playlist(self, title: str, source_pls: List,
                                 limit: int):
+
         """Create shuffled playlist with `title`.
 
         If it exests then purge it from tracks,
@@ -22,7 +27,7 @@ class DeezerPlaylist(object):
         print('Resetting playlist {0}'.format(title))
 
         # reset playlist by title and get its id
-        target_playlist_id = self._reset_playlist_by_title(title)
+        target_playlist_id = self.reset_playlist_by_title(title)
         self._dztool.set_playlist_desctiption(
             target_playlist_id,
             'Resetted '+datetime.today().strftime('%H:%M %d.%m.%Y')
@@ -35,7 +40,7 @@ class DeezerPlaylist(object):
         playlists = self.get_playlists_by_titles(source_pls)
 
         print('Finding all tracks from playlists: '
-              + ', '.join([pl['title'] for pl in self.playlists]))
+              + ', '.join([pl['title'] for pl in playlists]))
 
         tracks = set()
         duplicates_count = 0
@@ -62,7 +67,7 @@ class DeezerPlaylist(object):
         tracks = tracks[:limit]
 
         print('Adding {0} tracks to playlist {1}'
-              .format(str(len(self.tracks)), title))
+              .format(len(tracks), title))
 
         self._dztool.add_tracks_to_playlist(tracks, target_playlist_id)
 
@@ -121,27 +126,13 @@ class DeezerPlaylist(object):
         # if there is only one, delete all tracks from it
         elif len(playlists) == 1:
             target_playlist_id = playlists[0]['id']
-            self._dztool.purge_playlist(self.target_playlist_id)
+            self._dztool.purge_playlist(target_playlist_id)
 
         # if there is no one, create new
         else:
             target_playlist_id = self._dztool.create_playlist(title)
 
         return target_playlist_id
-
-        def _check_scenario_name_valid(self, scenario_name: str,
-                                      raise_exception: bool = False):
-            """Check if scenario_name is valid name for scenario, return bool
-
-            If raise_exception is True, then instad of returning False
-            it will raise exception.
-            """
-            check = bool(re.search('^pl_', scenario_name))
-
-            if raise_exception and not check:
-                raise Exception('Invalid scenario name: "{}"'.format(scenario_name))
-            else:
-                return check
 
     def _rid_of_duplicates(self, list_of_dicts: List[Dict],
                                        field: str):

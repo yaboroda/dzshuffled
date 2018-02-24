@@ -11,12 +11,10 @@ import pprint
 import sys
 import argparse
 import subprocess
-import re
 
 from dztoolset.deezerconfig import DeezerConfig
-from dztoolset.deezerauth import DeezerAuth
-from dztoolset.deezertool import DeezerTool
-from dztoolset.deezerapi import DeezerApi, DeezerApiRequestError
+from dztoolset.deezerapi import DeezerApiRequestError
+from dztoolset.deezerscenario import DeezerScenario
 
 SCRIPT_VERSION = '1.3.0.0'
 DEBUG_MODE = False
@@ -128,33 +126,33 @@ def print_info_about_scenario(number, name, data=None):
         print('[{0}] {1}'.format(number, name))
 
 
-def print_list_scenarios(dz_tool, verbosity=None):
-    scenarios = dz_tool.get_list_of_scenarios()
+def print_list_scenarios(dz, verbosity=None):
+    scenarios = dz.get_list_of_scenarios()
     for i in range(len(scenarios)):
         if verbosity:
             print_info_about_scenario(
-                i, scenarios[i], dz_tool.get_scenario_config(scenarios[i])
+                i, scenarios[i], dz.get_scenario_config(scenarios[i])
             )
         else:
             print_info_about_scenario(i, scenarios[i])
 
 
-def process_cli_scenario_call(scenario_input, dz_tool, info_flag=None):
+def process_cli_scenario_call(scenario_input, dz, info_flag=None):
     if scenario_input.isnumeric():
         scenario_index = int(scenario_input)
-        scenario_name = dz_tool.get_scenario_name_by_index(scenario_index)
+        scenario_name = dz.get_scenario_name_by_index(scenario_index)
     else:
         scenario_name = scenario_input
-        scenario_index = dz_tool.get_scenario_index_by_name(scenario_name)
+        scenario_index = dz.get_scenario_index_by_name(scenario_name)
 
     if info_flag:
         print_info_about_scenario(
             scenario_index, scenario_name,
-            dz_tool.get_scenario_config(scenario_name)
+            dz.get_scenario_config(scenario_name)
         )
     else:
-        dz_tool.check_and_update_token()
-        dz_tool.exec_scenario(scenario_name)
+        dz.check_and_update_token()
+        dz.exec_scenario(scenario_name)
 
 
 def edit_config(config, editor=None):
@@ -187,14 +185,14 @@ def main():
         if not args.scenario and not args.list:
             print_help_and_exit(parser)
 
-        dz_tool = DeezerTool(config, DeezerAuth(), DeezerApi())
+        dz = DeezerScenario(config)
 
         if args.list:
-            print_list_scenarios(dz_tool, args.verbous)
+            print_list_scenarios(dz, args.verbous)
             sys.exit()
 
         if args.scenario:
-            process_cli_scenario_call(args.scenario, dz_tool, args.info)
+            process_cli_scenario_call(args.scenario, dz, args.info)
             sys.exit()
 
     except DeezerApiRequestError as e:
