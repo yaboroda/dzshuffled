@@ -6,20 +6,26 @@ import sys
 class Config(object):
     """Manage info from config .ini file."""
 
-    def __init__(self, path: str):
+    def __init__(self, path: str, printer=None):
         """_Read file from path or create new one.
 
         Keyword arguments:
         path -- path to config file
+        printer -- object to output service messages
         """
         self.path = path
+        self.printer = printer
 
         if not os.path.isfile(path):
             self._create_new_config_file()
-            print('New config file was created in {}'.format(path))
+            self.print('New config file was created in {}'.format(path))
             sys.exit()
         else:
             self._read()
+
+    def print(self, text):
+        if self.printer:
+            self.printer.print(text)
 
     def get(self, section: str = None, option: str = None):
         """Get info from config.

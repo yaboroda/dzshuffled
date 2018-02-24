@@ -1,9 +1,5 @@
-from random import shuffle
-from typing import Dict, List, Union
+from typing import List, Union
 
-from icecream import ic
-
-from dztoolset.deezerconfig import DeezerConfig
 from dztoolset.deezerauth import DeezerAuth
 from dztoolset.deezerapi import DeezerApi
 
@@ -13,7 +9,7 @@ class DeezerTool(object):
     All actions related only to playlists and tracks, that added to it
     """
 
-    def __init__(self, config):
+    def __init__(self, config: 'DeezerConfig'):
         self._limit_items_delete = 500
         self._myplaylists = None
 
@@ -63,7 +59,7 @@ class DeezerTool(object):
         new_playlist_id = response['id']
         return new_playlist_id
 
-    def remove_playlist(self, id):
+    def remove_playlist(self, id: Union[str, int]):
         """Remove playlist from your library by id.
         It will not warning you or ask, so think carefully.
         Return bool
@@ -72,7 +68,7 @@ class DeezerTool(object):
         response = self.api.delete_request(uri, 'single')
         return response
 
-    def purge_playlist(self, id):
+    def purge_playlist(self, id: Union[str, int]):
         """Remove all tracks from playlist by id.
         It will not warning you or ask, so think carefully.
         """

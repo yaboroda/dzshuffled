@@ -7,18 +7,19 @@ email:      yarboroda@gmail.com
 """
 
 import os
-import pprint
 import sys
 import argparse
 import subprocess
+from typing import Union, Dict
 
 from dztoolset.deezerconfig import DeezerConfig
 from dztoolset.deezerapi import DeezerApiRequestError
 from dztoolset.deezerscenario import DeezerScenario
+from dztoolset.printer import Printer
 
 SCRIPT_VERSION = '1.3.0.0'
 DEBUG_MODE = False
-pp = pprint.PrettyPrinter(indent=4)
+printer = Printer()
 
 """If environment var defined, set CONFIG_PATH from it,
 else set to ~/.config/dzshuffled/config.ini
@@ -30,15 +31,15 @@ else:
                    + "/.config/dzshuffled/config.ini")
 
 
-def handle_exception_output(e, template='{0}'):
+def handle_exception_output(e, template: str ='{0}'):
     """If not DEBUG_MODE swallow tracing exception, output only message."""
     if not DEBUG_MODE:
-        print(template.format(e))
+        printer.print(template.format(e))
     else:
         raise e
 
 
-def print_help_and_exit(parser):
+def print_help_and_exit(parser: argparse.ArgumentParser):
     parser.print_help()
     sys.exit()
 
@@ -118,15 +119,16 @@ def build_cli_parser():
     return parser
 
 
-def print_info_about_scenario(number, name, data=None):
+def print_info_about_scenario(number: Union[int, str], name: str,
+                              data: Dict = None):
     if data:
-        print('[{0}] {1}'.format(number, name))
-        pp.pprint(data)
+        printer.print('[{0}] {1}'.format(number, name))
+        printer.pprint(data)
     else:
-        print('[{0}] {1}'.format(number, name))
+        printer.print('[{0}] {1}'.format(number, name))
 
 
-def print_list_scenarios(dz, verbosity=None):
+def print_list_scenarios(dz: DeezerScenario, verbosity: bool = False):
     scenarios = dz.get_list_of_scenarios()
     for i in range(len(scenarios)):
         if verbosity:
@@ -137,7 +139,8 @@ def print_list_scenarios(dz, verbosity=None):
             print_info_about_scenario(i, scenarios[i])
 
 
-def process_cli_scenario_call(scenario_input, dz, info_flag=None):
+def process_cli_scenario_call(scenario_input: str, dz: DeezerScenario,
+                              info_flag: bool = False):
     if scenario_input.isnumeric():
         scenario_index = int(scenario_input)
         scenario_name = dz.get_scenario_name_by_index(scenario_index)
@@ -155,7 +158,7 @@ def process_cli_scenario_call(scenario_input, dz, info_flag=None):
         dz.exec_scenario(scenario_name)
 
 
-def edit_config(config, editor=None):
+def edit_config(config: DeezerConfig, editor=None):
     if not editor:
         editor = config.get('system', 'editor')
     p = subprocess.Popen([editor, config.path])
@@ -172,10 +175,10 @@ def main():
         if args.debug:
             DEBUG_MODE = True
 
-        config = DeezerConfig(CONFIG_PATH)
+        config = DeezerConfig(CONFIG_PATH, printer)
 
         if args.version:
-            print('version: {0}'.format(SCRIPT_VERSION))
+            printer.print('version: {0}'.format(SCRIPT_VERSION))
             sys.exit()
 
         if args.edit:

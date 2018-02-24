@@ -3,6 +3,7 @@ from random import shuffle
 from datetime import datetime
 
 from dztoolset.deezertool import DeezerTool
+from dztoolset.printer import Printer
 
 
 class DeezerPlaylist(object):
@@ -10,12 +11,13 @@ class DeezerPlaylist(object):
 
     def __init__(self, config):
         self._dztool = DeezerTool(config)
+        self.printer = Printer()
 
     def check_and_update_token(self):
         self._dztool.check_and_update_token()
 
     def make_shuffled_playlist(self, title: str, source_pls: List,
-                                limit: int):
+                               limit: int):
 
         """Create shuffled playlist with `title`.
 
@@ -24,7 +26,7 @@ class DeezerPlaylist(object):
         in `source_pls`, shufflig them before it
         """
 
-        print('Resetting playlist {0}'.format(title))
+        self.printer.print('Resetting playlist {0}'.format(title))
 
         # reset playlist by title and get its id
         target_playlist_id = self.reset_playlist_by_title(title)
@@ -39,8 +41,8 @@ class DeezerPlaylist(object):
         self.check_for_absence_of_playlists(source_pls, True)
         playlists = self.get_playlists_by_titles(source_pls)
 
-        print('Finding all tracks from playlists: '
-              + ', '.join([pl['title'] for pl in playlists]))
+        self.printer.print('Finding all tracks from playlists: '
+                           + ', '.join([pl['title'] for pl in playlists]))
 
         tracks = set()
         duplicates_count = 0
@@ -54,24 +56,24 @@ class DeezerPlaylist(object):
                 else:
                     duplicates_count += 1
 
-        print('Found {0} tracks'.format(tracks_count))
+        self.printer.print('Found {0} tracks'.format(tracks_count))
 
         if duplicates_count > 0:
-            print('Rid of {0} duplicates, {1} tracks left'
-                  .format(duplicates_count, len(tracks)))
+            self.printer.print('Rid of {0} duplicates, {1} tracks left'
+                               .format(duplicates_count, len(tracks)))
 
         tracks = list(tracks)
 
-        print('Shuffling')
+        self.printer.print('Shuffling')
         shuffle(tracks)
         tracks = tracks[:limit]
 
-        print('Adding {0} tracks to playlist {1}'
-              .format(len(tracks), title))
+        self.printer.print('Adding {0} tracks to playlist {1}'
+                           .format(len(tracks), title))
 
         self._dztool.add_tracks_to_playlist(tracks, target_playlist_id)
 
-        print('Done')
+        self.printer.print('Done')
 
         return self
 
@@ -86,7 +88,7 @@ class DeezerPlaylist(object):
         return playlists
 
     def check_for_absence_of_playlists(self, target_titles: List[str],
-                                        raise_exception: bool = False):
+                                       raise_exception: bool = False):
         """Check if playlists with title absence in library.
 
         Returns list of missing titles or raise exception.
@@ -135,7 +137,7 @@ class DeezerPlaylist(object):
         return target_playlist_id
 
     def _rid_of_duplicates(self, list_of_dicts: List[Dict],
-                                       field: str):
+                           field: str):
         """Remove duplicates from list_of_dicts,
         comparig them by field argument.
         """

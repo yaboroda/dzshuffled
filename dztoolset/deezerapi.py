@@ -97,7 +97,7 @@ class DeezerApi(object):
         if response_type == 'list':
             if 'data' not in response:
                 raise DeezerApiError('Error occured on request'
-                                             ' to Deezer api')
+                                     ' to Deezer api')
 
             nextPages = []
             if 'next' in response:

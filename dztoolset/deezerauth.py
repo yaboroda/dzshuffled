@@ -2,6 +2,7 @@ import json
 import http.server
 import webbrowser
 import re
+from typing import Union
 
 import requests
 
@@ -41,7 +42,8 @@ class DeezerAuth(object):
 
         return self._user
 
-    def set_params(self, port, secret, app_id, token=''):
+    def set_params(self, port: Union[int, str], secret: str,
+                   app_id: Union[int, str], token: str = ''):
         """Set parameters for authorization.
 
         If you pass in token, it will be used instead of retriving new.
@@ -56,7 +58,7 @@ class DeezerAuth(object):
         """
         self._port = int(port)
         self._secret = secret
-        self._app_id = app_id
+        self._app_id = str(app_id)
         self.token = token
 
     def authorize(self):

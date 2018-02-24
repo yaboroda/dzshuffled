@@ -1,6 +1,3 @@
- - finish deezerscenario module, think on global scheme of package
- - use Printer class for all output
- - update executable dezhuffled file
  - check all type hinting
  - tests
  - think about delete_request method
