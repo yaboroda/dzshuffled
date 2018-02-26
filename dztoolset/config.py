@@ -14,18 +14,14 @@ class Config(object):
         printer -- object to output service messages
         """
         self.path = path
-        self.printer = printer
+        self._printer = printer
 
         if not os.path.isfile(path):
             self._create_new_config_file()
-            self.print('New config file was created in {}'.format(path))
+            self._print('New config file was created in {}'.format(path))
             sys.exit()
         else:
             self._read()
-
-    def print(self, text):
-        if self.printer:
-            self.printer.print(text)
 
     def get(self, section: str = None, option: str = None):
         """Get info from config.
@@ -62,11 +58,15 @@ class Config(object):
         """Get list of sections in config."""
         return self.cfg.sections()
 
+    def _print(self, text):
+        if self._printer:
+            self._printer.print(text)
+
     def _set_up_default_config(self):
         """Sets up default config data,
         it should be redeclared in subclass.
         """
-        self.cfg['config'] = {'example_config': 'example_value'}
+        self.cfg['config'] = {'example_option': 'example_value'}
 
     def _create_new_config_file(self):
         """Create new config file from default config."""
