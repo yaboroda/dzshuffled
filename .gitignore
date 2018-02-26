@@ -4,3 +4,4 @@ dzshuffled.sublime-project
 dzshuffled.sublime-workspace
 .vscode/
 __pycache__/
+.pytest_cache/
