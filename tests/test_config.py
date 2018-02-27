@@ -18,7 +18,7 @@ class TestConfig(object):
             os.remove(self.path)
 
     def test_creating_file(self):
-        """Assert that config file creating and correct"""
+        """Test that config file creating and correct."""
         assert os.path.isfile(self.path)
 
         cfg2 = configparser.ConfigParser()
@@ -26,16 +26,20 @@ class TestConfig(object):
         assert cfg2.get('config', 'example_option') == 'example_value'
 
     def test_get_option(self):
+        """Test getting options value."""
         assert (self.cfg.get('config', 'example_option')
                 == self.default_data['config']['example_option'])
 
     def test_get_section(self):
+        """Test getting section."""
         assert self.cfg.get('config') == self.default_data['config']
 
     def test_get_all(self):
+        """Test getting whole config."""
         assert self.cfg.get() == self.default_data
 
     def test_set(self):
+        """Test setting options value and updating config file."""
         new_value = '123'
         self.cfg.set('config', 'example_option', new_value)
         assert self.cfg.get('config', 'example_option') == new_value
