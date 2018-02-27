@@ -1,5 +1,6 @@
 import pytest
 import os
+import configparser
 from dztoolset.config import Config
 
 
@@ -17,7 +18,12 @@ class TestConfig(object):
             os.remove(self.path)
 
     def test_creating_file(self):
+        """Assert that config file creating and correct"""
         assert os.path.isfile(self.path)
+
+        cfg2 = configparser.ConfigParser()
+        cfg2.read(self.path)
+        assert cfg2.get('config', 'example_option') == 'example_value'
 
     def test_get_option(self):
         assert (self.cfg.get('config', 'example_option')
@@ -28,3 +34,12 @@ class TestConfig(object):
 
     def test_get_all(self):
         assert self.cfg.get() == self.default_data
+
+    def test_set(self):
+        new_value = '123'
+        self.cfg.set('config', 'example_option', new_value)
+        assert self.cfg.get('config', 'example_option') == new_value
+
+        cfg2 = configparser.ConfigParser()
+        cfg2.read(self.path)
+        assert cfg2.get('config', 'example_option') == new_value
