@@ -71,3 +71,16 @@ class TestDeezerApi(object):
             )
         ])
         assert data == [{"test_data1": "test1"}, {"test_data2": "test2"}]
+
+    def test_get_request_boolean_response(self, mocker):
+        mock_response = MockResponse()
+        mock_response.text = 'true'
+        mocker.patch('requests.get', return_value=mock_response)
+
+        data = self.api.get_request(self.test_uri, 'single', self.test_params)
+        requests.get.assert_called_once_with(
+            self.base_url+self.test_uri,
+            self.test_params_after_add_required
+        )
+        assert isinstance(data, bool)
+        assert data
