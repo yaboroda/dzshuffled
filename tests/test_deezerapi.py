@@ -70,4 +70,4 @@ class TestDeezerApi(object):
                 'next_url'
             )
         ])
-        assert data == [{"test_data1": "test1"}, {"test_data2":"test2"}]
+        assert data == [{"test_data1": "test1"}, {"test_data2": "test2"}]
