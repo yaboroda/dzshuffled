@@ -1,5 +1,8 @@
-from dztoolset.deezerapi import DeezerApi
 import requests
+import pytest
+import pytest_mock
+from unittest.mock import call
+from dztoolset.deezerapi import DeezerApi
 
 
 class MockResponse(object):
@@ -45,3 +48,26 @@ class TestDeezerApi(object):
             self.test_params_after_add_required
         )
         assert data == {"test_data": "test"}
+
+    def test_get_request_list(self, mocker):
+        mock_response1 = MockResponse()
+        mock_response1.text = (
+            '{"data": [{"test_data1":"test1"}], "next":"next_url"}'
+        )
+        mock_response2 = MockResponse()
+        mock_response2.text = '{"data": [{"test_data2":"test2"}]}'
+        mocker.patch('requests.get',
+                     side_effect=[mock_response1, mock_response2])
+
+        data = self.api.get_request(self.test_uri, 'list', self.test_params)
+
+        requests.get.assert_has_calls([
+            call(
+                self.base_url+self.test_uri,
+                self.test_params_after_add_required
+            ),
+            call(
+                'next_url'
+            )
+        ])
+        assert data == [{"test_data1": "test1"}, {"test_data2":"test2"}]
