@@ -75,7 +75,7 @@ class DeezerApi(object):
             'code'    - error code, optional, str
         """
         code = error_data['code'] if 'code' in error_data else None
-        raise DeezerApiError(error_data['message'], code)
+        raise DeezerApiRequestError(error_data['message'], code)
 
     def _prepare_response(self, response: requests.models.Response,
                           response_type: str):
