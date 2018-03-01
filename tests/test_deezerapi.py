@@ -5,6 +5,8 @@ from unittest.mock import call
 from dztoolset.deezerapi import (DeezerApi, DeezerApiError,
                                  DeezerApiRequestError)
 
+assert callable(pytest_mock.mocker)
+
 
 class MockResponse(object):
 
