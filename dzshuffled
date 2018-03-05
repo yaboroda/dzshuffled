@@ -175,7 +175,7 @@ def main():
         if args.debug:
             DEBUG_MODE = True
 
-        config = DeezerConfig(CONFIG_PATH, printer)
+        config = DeezerConfig(CONFIG_PATH, printer=printer)
 
         if args.version:
             printer.print('version: {0}'.format(SCRIPT_VERSION))
