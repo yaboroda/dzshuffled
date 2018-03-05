@@ -1,6 +1,5 @@
  - check all type hinting
  - name params on calling when it is proper
  - tests
- - think about delete_request method
  - different scenario types?
  - bash autocomplite scenario names
