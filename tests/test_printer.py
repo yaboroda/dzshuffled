@@ -1,4 +1,3 @@
-import pytest
 import pprint
 from dztoolset.printer import Printer
 

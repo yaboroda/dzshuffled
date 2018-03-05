@@ -163,17 +163,17 @@ def edit_config(config: DeezerConfig, editor=None):
     return p.wait()
 
 
-def main():
+def main(custom_args=None, config_path=CONFIG_PATH):
     global DEBUG_MODE
 
     try:
         parser = build_cli_parser()
-        args = parser.parse_args()
+        args = parser.parse_args(custom_args)
 
         if args.debug:
             DEBUG_MODE = True
 
-        config = DeezerConfig(CONFIG_PATH, printer=printer)
+        config = DeezerConfig(config_path, printer=printer)
 
         if args.version:
             printer.print('version: {0}'.format(SCRIPT_VERSION))
@@ -200,7 +200,3 @@ def main():
         handle_exception_output(e)
     except Exception as e:
         handle_exception_output(e, 'Error: {0}')
-
-
-if __name__ == '__main__':
-    main()
