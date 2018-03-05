@@ -4,7 +4,7 @@ from dztoolset.config import Config
 class DeezerConfig(Config):
     """Config class for DeezerTool object"""
 
-    def _set_up_default_config(self):
+    def _get_default_data(self):
         """Sets up default config data."""
         data = {
             'system': {
