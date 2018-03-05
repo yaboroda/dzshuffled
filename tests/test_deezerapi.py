@@ -95,16 +95,26 @@ class TestDeezerApi(object):
         mock_response2.text = (
             '{"error":{"message":"Error message", "code": "errorcode"}}'
         )
-        mocker.patch('requests.get',
-                     side_effect=[mock_response1, mock_response2])
+        mocker.patch(
+            'requests.get',
+            side_effect=[mock_response1, mock_response1, mock_response2]
+        )
 
         with pytest.raises(DeezerApiError):
             self.api.get_request(self.test_uri, 'list', self.test_params)
+
+        with pytest.raises(DeezerApiError):
+            self.api.get_request(self.test_uri, 'not_existing_response_type',
+                                 self.test_params)
 
         with pytest.raises(DeezerApiRequestError):
             self.api.get_request(self.test_uri, 'list', self.test_params)
 
         requests.get.assert_has_calls([
+            call(
+                self.base_url+self.test_uri,
+                self.test_params_after_add_required
+            ),
             call(
                 self.base_url+self.test_uri,
                 self.test_params_after_add_required
