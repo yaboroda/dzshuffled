@@ -58,10 +58,7 @@ class DeezerApi(object):
         params -- Dict with parameters to add to request (default {})
         """
         params = self._add_required_params(params)
-        uri += '?access_token={0}'.format(params.pop('access_token'))
-
-        for p, val in params.items():
-            uri += '&{0}={1}'.format(p, val)
+        uri += '?'+'&'.join([f'{key}={val}' for key, val in params.items()])
 
         response = requests.delete(self._base_url + uri)
         return self._prepare_response(response, response_type)

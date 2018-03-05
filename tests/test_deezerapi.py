@@ -100,6 +100,30 @@ class TestDeezerApi(object):
         )
         assert data == {"test_data": "test"}
 
+    def test_delete_request(self, mocker):
+        mock_response = MockResponse()
+        mock_response.text = 'true'
+        mocker.patch('requests.delete', return_value=mock_response)
+
+        data = self.api.delete_request(self.test_uri, 'single',
+                                       self.test_params)
+
+        # delete request works with GET parameters in url string
+        # so we get url string of request and test it for all we need
+        assert len(requests.delete.mock_calls) == 1
+        (name, args, kwargs) = requests.delete.mock_calls[0]
+        (url,) = args
+
+        # url begins with http://address.com?
+        assert url.find(self.base_url+self.test_uri+'?') == 0
+
+        # check for presence of each key-value pair, including token
+        for key, val in self.test_params_after_add_required.items():
+            assert f'{key}={val}' in url
+
+        assert isinstance(data, bool)
+        assert data
+
     def test_prepare_response_errors(self, mocker):
         mock_response1 = MockResponse()
         mock_response1.text = '{"test_data":"test"}'
