@@ -1,5 +1,5 @@
-import pytest
 from dztoolset.deezerauth import DeezerAuth
+
 
 class TestDeezerAuth(object):
 
