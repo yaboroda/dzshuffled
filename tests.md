@@ -6,16 +6,16 @@
 Name                          Stmts   Miss  Cover
 -------------------------------------------------
 dztoolset/__init__.py             0      0   100%
-dztoolset/config.py              55      3    95%
+dztoolset/config.py              62      0   100%
 dztoolset/deezerapi.py           55      0   100%
 dztoolset/deezerauth.py          78     78     0%
-dztoolset/deezerconfig.py         6      6     0%
+dztoolset/deezerconfig.py         5      5     0%
 dztoolset/deezerplaylist.py      70     70     0%
 dztoolset/deezerscenario.py      49     49     0%
 dztoolset/deezertool.py          60     60     0%
 dztoolset/printer.py             11      2    82%
 -------------------------------------------------
-TOTAL                           384    268    30%
+TOTAL                           390    264    32%
 ```
 
 #### requirements
