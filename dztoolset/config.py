@@ -1,20 +1,27 @@
 import configparser
 import os
 import sys
+from typing import Dict
 
 
 class Config(object):
     """Manage info from config .ini file."""
 
-    def __init__(self, path: str, printer=None):
+    def __init__(self, path: str, default_data: Dict = None,
+                 printer=None):
         """_Read file from path or create new one.
 
         Keyword arguments:
         path -- path to config file
-        printer -- object to output service messages
+        default_config_data -- dict with data to initialize new config file,
+            alternatively it can be set with redefining
+            _get_default_data method of subclass
+        printer -- object to output service messages,
+                   must implement method print()
         """
         self.path = path
         self._printer = printer
+        self._default_data = default_data
 
         if not os.path.isfile(path):
             self._create_new_config_file()
@@ -62,11 +69,20 @@ class Config(object):
         if self._printer:
             self._printer.print(text)
 
-    def _set_up_default_config(self):
-        """Sets up default config data,
-        it should be redeclared in subclass.
+    def _get_default_data(self):
+        """Sets up default config data, if it was not set in __init__().
+
+        you can redefine it in sublass
         """
-        self.cfg['config'] = {'example_option': 'example_value'}
+        return {'config': {'example_option': 'example_value'}}
+
+    def _set_up_default_config(self):
+        """Sets up default config."""
+        if not self._default_data:
+            self._default_data = self._get_default_data()
+
+        for section, data in self._default_data.items():
+            self.cfg[section] = data
 
     def _create_new_config_file(self):
         """Create new config file from default config."""

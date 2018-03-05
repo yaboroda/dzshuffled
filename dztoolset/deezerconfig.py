@@ -6,19 +6,23 @@ class DeezerConfig(Config):
 
     def _set_up_default_config(self):
         """Sets up default config data."""
-        self.cfg['system'] = {
-            'port': '8090',
-            'editor': 'vim'
+        data = {
+            'system': {
+                'port': '8090',
+                'editor': 'vim'
+            },
+            'auth': {
+                'app_id': '',
+                'secret': '',
+                'token': ''
+            },
+            'pl_example': {
+                'title': 'Example shuffled playlist',
+                'type': 'shuffled',
+                'source':
+                'playlist 1, playlist 2',
+                'limit': 1000
+            }
         }
-        self.cfg['auth'] = {
-            'app_id': '',
-            'secret': '',
-            'token': ''
-        }
-        self.cfg['pl_example'] = {
-            'title': 'Example shuffled playlist',
-            'type': 'shuffled',
-            'source':
-            'playlist 1, playlist 2',
-            'limit': 1000
-        }
+
+        return data
