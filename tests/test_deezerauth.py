@@ -1,8 +1,5 @@
 import pytest
-import pytest_mock
 from dztoolset.deezerauth import DeezerAuth
-
-assert callable(pytest_mock.mocker)
 
 class TestDeezerAuth(object):
 
