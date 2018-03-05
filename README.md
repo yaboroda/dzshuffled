@@ -133,3 +133,6 @@ optional arguments:
   --version        show script version
 
 ```
+
+#### unit tests
+[tests info](/tests.md)

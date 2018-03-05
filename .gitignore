@@ -5,3 +5,5 @@ dzshuffled.sublime-workspace
 .vscode/
 __pycache__/
 .pytest_cache/
+.coverage
+htmlcov/
