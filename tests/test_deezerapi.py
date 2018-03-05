@@ -88,6 +88,18 @@ class TestDeezerApi(object):
         assert isinstance(data, bool)
         assert data
 
+    def test_post_request(self, mocker):
+        mock_response = MockResponse()
+        mock_response.text = '{"test_data":"test"}'
+        mocker.patch('requests.post', return_value=mock_response)
+
+        data = self.api.post_request(self.test_uri, 'single', self.test_params)
+        requests.post.assert_called_once_with(
+            self.base_url+self.test_uri,
+            self.test_params_after_add_required
+        )
+        assert data == {"test_data": "test"}
+
     def test_prepare_response_errors(self, mocker):
         mock_response1 = MockResponse()
         mock_response1.text = '{"test_data":"test"}'
