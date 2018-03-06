@@ -51,7 +51,7 @@ class TestDzshuffledCli(object):
 
     def teardown(self):
         if os.path.isfile(self.config_path):
-            os.remove(self.config_path)        
+            os.remove(self.config_path)
 
     def test_config_file_created(self):
         assert os.path.isfile(self.config_path)
