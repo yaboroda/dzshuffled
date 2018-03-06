@@ -50,11 +50,8 @@ class TestDzshuffledCli(object):
         cfg_patcher.stop()
 
     def teardown(self):
-        self.remove_test_config_file()
-
-    def remove_test_config_file(self):
         if os.path.isfile(self.config_path):
-            os.remove(self.config_path)
+            os.remove(self.config_path)        
 
     def test_config_file_created(self):
         assert os.path.isfile(self.config_path)
