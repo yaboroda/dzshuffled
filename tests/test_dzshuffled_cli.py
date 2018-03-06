@@ -24,22 +24,26 @@ class TestDzshuffledCli(object):
     def test_config_file_created(self):
         assert os.path.isfile(self.config_path)
 
-    def test_show_list_of_scenarios(self, mocker):
+    def test_show_list_of_scenarios_short(self, mocker):
         mocker.patch.object(Printer, 'print')
-        mocker.patch.object(Printer, 'pprint')
 
         # print short version, will use print method
         with pytest.raises(SystemExit):
             dz_cli.main(['-l'], self.config_path)
 
+        Printer.print.assert_has_calls([
+            call('[0] pl_example'),
+        ])
+
+    def test_show_list_of_scenarios_verbous(self, mocker):
+        mocker.patch.object(Printer, 'print')
+        mocker.patch.object(Printer, 'pprint')
+
         # print verbouse version, will use both methods (print, pprint)
         with pytest.raises(SystemExit):
             dz_cli.main(['-lv'], self.config_path)
 
-        Printer.print.assert_has_calls([
-            call('[0] pl_example'),
-            call('[0] pl_example'),
-        ])
+        Printer.print.assert_called_once_with('[0] pl_example')
 
         Printer.pprint.assert_called_once_with({
             'title': 'Example shuffled playlist', 
