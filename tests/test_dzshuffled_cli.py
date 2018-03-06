@@ -46,7 +46,7 @@ class TestDzshuffledCli(object):
         Printer.print.assert_called_once_with('[0] pl_example')
 
         Printer.pprint.assert_called_once_with({
-            'title': 'Example shuffled playlist', 
-            'type': 'shuffled', 
+            'title': 'Example shuffled playlist',
+            'type': 'shuffled',
             'source': 'playlist 1, playlist 2', 'limit': '1000'
         })
