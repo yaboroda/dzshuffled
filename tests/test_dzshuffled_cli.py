@@ -39,7 +39,7 @@ class TestDzshuffledCli(object):
         }
 
     def setup(self):
-        self.remove_test_config_file()
+        assert not os.path.isfile(self.config_path)
         cfg_patcher = patch.object(
             DeezerConfig,
             '_get_default_data',
@@ -93,9 +93,23 @@ class TestDzshuffledCli(object):
         mocker.patch.object(Printer, 'print')
         mocker.patch.object(Printer, 'pprint')
 
-        # print short version, will use both methods (print, pprint)
+        # will use both methods (print, pprint)
         with pytest.raises(SystemExit):
             dz_cli.main(['-i', '0'], self.config_path)
+
+        Printer.print.assert_called_once_with('[0] pl_test1')
+
+        Printer.pprint.assert_called_once_with(
+            self.default_config_data['pl_test1']
+        )
+
+    def test_print_info_about_scenario_by_name(self, mocker):
+        mocker.patch.object(Printer, 'print')
+        mocker.patch.object(Printer, 'pprint')
+
+        # will use both methods (print, pprint)
+        with pytest.raises(SystemExit):
+            dz_cli.main(['-i', 'pl_test1'], self.config_path)
 
         Printer.print.assert_called_once_with('[0] pl_test1')
 
