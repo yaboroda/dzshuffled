@@ -37,6 +37,10 @@ class TestDzshuffledCli(object):
                 'limit': '200'
             }
         }
+        self.scenario_short_info = [
+            '[0] pl_test1',
+            '[1] pl_test2',
+        ]
 
     def setup(self):
         assert not os.path.isfile(self.config_path)
@@ -64,8 +68,8 @@ class TestDzshuffledCli(object):
             dz_cli.main(['-l'], self.config_path)
 
         Printer.print.assert_has_calls([
-            call('[0] pl_test1'),
-            call('[1] pl_test2'),
+            call(self.scenario_short_info[0]),
+            call(self.scenario_short_info[1]),
         ])
 
     def test_show_list_of_scenarios_verbous(self, mocker):
@@ -77,8 +81,8 @@ class TestDzshuffledCli(object):
             dz_cli.main(['-lv'], self.config_path)
 
         Printer.print.assert_has_calls([
-            call('[0] pl_test1'),
-            call('[1] pl_test2'),
+            call(self.scenario_short_info[0]),
+            call(self.scenario_short_info[1]),
         ])
 
         Printer.pprint.assert_has_calls([
@@ -94,7 +98,7 @@ class TestDzshuffledCli(object):
         with pytest.raises(SystemExit):
             dz_cli.main(['-i', '0'], self.config_path)
 
-        Printer.print.assert_called_once_with('[0] pl_test1')
+        Printer.print.assert_called_once_with(self.scenario_short_info[0])
 
         Printer.pprint.assert_called_once_with(
             self.default_config_data['pl_test1']
