@@ -1,5 +1,7 @@
 import os
 from unittest.mock import call, patch
+from argparse import ArgumentParser
+from subprocess import Popen
 import pytest
 import pytest_mock
 import dztoolset.dzshuffled_cli as dz_cli
@@ -117,3 +119,39 @@ class TestDzshuffledCli(object):
         Printer.pprint.assert_called_once_with(
             self.default_config_data['pl_test1']
         )
+
+    def test_without_params_print_help(self, mocker):
+        mocker.patch.object(ArgumentParser, 'print_help')
+
+        with pytest.raises(SystemExit):
+            dz_cli.main([], self.config_path)
+
+        ArgumentParser.print_help.assert_called_once()
+
+    def test_edit_config(self, mocker):
+        mocker.patch.object(Popen, '__init__', return_value=None)
+        mocker.patch.object(Popen, 'wait')
+
+        with pytest.raises(SystemExit):
+            dz_cli.main(['-e'], self.config_path)
+
+        Popen.__init__.assert_called_once_with([
+            self.default_config_data['system']['editor'],
+            self.config_path
+        ])
+
+        Popen.wait.assert_called_once()
+
+    def test_edit_config_with_custom_editor(self, mocker):
+        mocker.patch.object(Popen, '__init__', return_value=None)
+        mocker.patch.object(Popen, 'wait')
+
+        with pytest.raises(SystemExit):
+            dz_cli.main(['-e', '--editor', 'microsoft_word'], self.config_path)
+
+        Popen.__init__.assert_called_once_with([
+            'microsoft_word',
+            self.config_path
+        ])
+
+        Popen.wait.assert_called_once()
