@@ -1,6 +1,13 @@
+import webbrowser
+from http.server import HTTPServer
 import pytest_mock
 import pytest
-from dztoolset.deezerauth import DeezerAuth, DeezerAuthError
+from dztoolset.deezerauth import (
+    DeezerAuth, DeezerAuthError, _AuthorizationHandler, _AuthorizationServer,
+    _Authorization
+)
+
+assert callable(pytest_mock.mocker)
 
 
 class TestDeezerAuth(object):
@@ -10,6 +17,7 @@ class TestDeezerAuth(object):
         self.port = 8090
         self.secret = 'test_secret'
         self.app_id = 123
+        self.test_code = 'testcode'
 
     def setup(self):
         self.auth = DeezerAuth()
@@ -42,3 +50,30 @@ class TestDeezerAuth(object):
 
         DeezerAuth._fetch_code.assert_called_once()
         DeezerAuth._fetch_token.assert_called_once()
+
+    def test__fetch_code(self, mocker):
+        url_redirect = self.auth._url_redirect.format(self.port)
+        url_auth = self.auth._url_auth.format(self.app_id, url_redirect)
+
+        mocker.patch('webbrowser.open')
+        mocker.patch.object(HTTPServer, '__init__', return_value=None)
+
+        mocker.patch.object(_AuthorizationServer, 'handle_request',
+                            side_effect=_Authorization(self.test_code))
+
+        self.auth._fetch_code()
+
+        webbrowser.open.assert_called_once_with(url_auth)
+        HTTPServer.__init__.assert_called_once()
+
+        # get and assert arguments
+        args, kwargs = HTTPServer.__init__.call_args
+        assert len(args) == 3
+        self_arg, (host, port), error_handler = args
+
+        assert host == 'localhost'
+        assert port == self.port
+        assert error_handler == _AuthorizationHandler
+        _AuthorizationServer.handle_request.assert_called_once()
+
+        assert self.auth.code == self.test_code
