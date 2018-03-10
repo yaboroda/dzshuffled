@@ -17,6 +17,15 @@ class MockResponse(object):
         self.text = ''
 
 
+class MockWfile(object):
+
+    def __init__(self):
+        self.write_data = None
+
+    def write(self, data):
+        self.write_data = data
+
+
 class TestDeezerAuth(object):
 
     def setup_class(self):
@@ -113,3 +122,38 @@ class TestDeezerAuth(object):
         self.auth.code = self.test_code
         with pytest.raises(DeezerAuthError):
             self.auth._fetch_token()
+
+    def test__AuthorizationHandler(self, mocker):
+        mocker.patch.object(_AuthorizationHandler, '__init__',
+                            return_value=None)
+        mocker.patch.object(_AuthorizationHandler, 'send_response')
+        mocker.patch.object(_AuthorizationHandler, 'send_header')
+        mocker.patch.object(_AuthorizationHandler, 'end_headers')
+
+        auth_handler = _AuthorizationHandler()
+        auth_handler.path = f'/authfinish?code={self.test_code}'
+        mock_wfile = MockWfile()
+        auth_handler.wfile = mock_wfile
+
+        with pytest.raises(_Authorization) as auth_exception_info:
+            auth_handler.do_GET()
+        assert auth_exception_info.value.code == self.test_code
+
+        _AuthorizationHandler.send_response.assert_called_once()
+        _AuthorizationHandler.send_header.assert_called_once_with(
+            'Content-Type', 'text/html'
+        )
+        _AuthorizationHandler.end_headers.assert_called_once()
+        assert '<script>close()</script>' in str(mock_wfile.write_data)
+
+    def test__AuthorizationHandler_error404(self, mocker):
+        mocker.patch.object(_AuthorizationHandler, '__init__',
+                            return_value=None)
+        mocker.patch.object(_AuthorizationHandler, 'send_response')
+        mocker.patch.object(_AuthorizationHandler, 'send_error')
+
+        auth_handler = _AuthorizationHandler()
+        auth_handler.path = f'/some_path'
+
+        auth_handler.do_GET()
+        _AuthorizationHandler.send_error.assert_called_once_with(404)
