@@ -12,10 +12,11 @@ chardet = "*"
 idna = "*"
 requests = "*"
 "urllib3" = "*"
-pytest = "*"
-pytest-mock = "*"
-pytest-cov = "*"
 
 
 [dev-packages]
 
+pytest = "*"
+pytest-mock = "*"
+pytest-cov = "*"
+"flake8" = "*"
