@@ -101,6 +101,9 @@ class DeezerAuth(object):
         self.server = _AuthorizationServer('localhost', self._port)
 
     def _fetch_token(self):
+        if not hasattr(self, 'code'):
+            raise DeezerAuthError('You must fetch code before fetching token')
+
         """Fetch temporary auth token if you has auth code."""
         url = self._url_token.format(self._app_id, self._secret, self.code)
         response = json.loads(requests.get(url).text)

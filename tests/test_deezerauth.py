@@ -1,4 +1,5 @@
 import webbrowser
+import requests
 from http.server import HTTPServer
 import pytest_mock
 import pytest
@@ -8,6 +9,12 @@ from dztoolset.deezerauth import (
 )
 
 assert callable(pytest_mock.mocker)
+
+
+class MockResponse(object):
+
+    def __init__(self):
+        self.text = ''
 
 
 class TestDeezerAuth(object):
@@ -77,3 +84,32 @@ class TestDeezerAuth(object):
         _AuthorizationServer.handle_request.assert_called_once()
 
         assert self.auth.code == self.test_code
+
+    def test__fetch_token(self, mocker):
+        mock_response = MockResponse()
+        mock_response.text = f'{{"access_token": "{self.token}"}}'
+
+        mocker.patch('requests.get', return_value=mock_response)
+
+        self.auth.code = self.test_code
+        self.auth._fetch_token()
+
+        url = self.auth._url_token.format(
+            self.app_id, self.secret, self.test_code
+        )
+        requests.get.assert_called_once_with(url)
+
+    def test__fetch_token_error_no_code(self):
+        assert not hasattr(self.auth, 'code')
+        with pytest.raises(DeezerAuthError):
+            self.auth._fetch_token()
+
+    def test__fetch_token_error_fetching(self, mocker):
+        mock_response = MockResponse()
+        mock_response.text = '{"error": "error_message"}'
+
+        mocker.patch('requests.get', return_value=mock_response)
+
+        self.auth.code = self.test_code
+        with pytest.raises(DeezerAuthError):
+            self.auth._fetch_token()
