@@ -124,13 +124,14 @@ class TestDeezerTool(object):
 
     def test_get_tracks_from_playlist(self, mocker):
         tracks_data = {"data": "value"}
+        playlist_id = 77
         mocker.patch.object(DeezerApi, 'get_request', return_value=tracks_data)
 
-        data = self.tool.get_tracks_from_playlist(11)
+        data = self.tool.get_tracks_from_playlist(playlist_id)
 
         assert data == tracks_data
         DeezerApi.get_request.assert_called_once_with(
-            '/playlist/11/tracks', 'list'
+            f'/playlist/{playlist_id}/tracks', 'list'
         )
 
     def test_create_playlist(self, mocker):
@@ -149,7 +150,7 @@ class TestDeezerTool(object):
 
         assert data == new_playlist_id
         DeezerApi.post_request.assert_called_once_with(
-            '/user/11/playlists',
+            f'/user/{user_id}/playlists',
             'single',
             {"title": playlist_title}
         )
@@ -163,5 +164,61 @@ class TestDeezerTool(object):
         assert result
         assert isinstance(result, bool)
         DeezerApi.delete_request.assert_called_once_with(
-            '/playlist/77', 'single'
+            f'/playlist/{playlist_id}', 'single'
         )
+
+    def test_purge_playlist(self, mocker):
+        tracks_data = [
+            {"id": 3},
+            {"id": 5},
+            {"id": 8},
+            {"id": 34},
+            {"id": 46},
+        ]
+        tracks_ids_str = '3,5,8,34,46'
+        playlist_id = 77
+        mocker.patch.object(DeezerApi, 'get_request', return_value=tracks_data)
+        mocker.patch.object(DeezerApi, 'delete_request')
+
+        self.tool.purge_playlist(playlist_id)
+
+        DeezerApi.get_request.assert_called_once_with(
+            f'/playlist/{playlist_id}/tracks', 'list'
+        )
+
+        DeezerApi.delete_request.assert_called_once_with(
+            f'/playlist/{playlist_id}/tracks', 'single',
+            {"songs": tracks_ids_str}
+        )
+
+    def test_purge_playlist_by_chunks(self, mocker):
+        self.tool._limit_items_delete = 3
+        tracks_data = [
+            {"id": 3},
+            {"id": 5},
+            {"id": 8},
+            {"id": 34},
+            {"id": 46},
+        ]
+        tracks_ids_str_1 = '3,5,8'
+        tracks_ids_str_2 = '34,46'
+        playlist_id = 77
+        mocker.patch.object(DeezerApi, 'get_request', return_value=tracks_data)
+        mocker.patch.object(DeezerApi, 'delete_request')
+
+        self.tool.purge_playlist(playlist_id)
+
+        DeezerApi.get_request.assert_called_once_with(
+            f'/playlist/{playlist_id}/tracks', 'list'
+        )
+
+        DeezerApi.delete_request.assert_has_calls([
+            mocker.call(
+                f'/playlist/{playlist_id}/tracks', 'single',
+                {"songs": tracks_ids_str_1}
+            ),
+            mocker.call(
+                f'/playlist/{playlist_id}/tracks', 'single',
+                {"songs": tracks_ids_str_2}
+            ),
+        ])
