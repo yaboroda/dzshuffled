@@ -157,3 +157,43 @@ class TestDeezerAuth(object):
 
         auth_handler.do_GET()
         _AuthorizationHandler.send_error.assert_called_once_with(404)
+
+    def test_check_token(self, mocker):
+        mock_response = MockResponse()
+        mock_response.text = '{"type": "user", "data": "value"}'
+        mocker.patch('requests.get', return_value=mock_response)
+
+        self.auth.token = self.token
+        check = self.auth.check_token()
+
+        assert check
+        assert isinstance(check, bool)
+
+        url = self.auth._url_check_token.format(self.token)
+        requests.get.assert_called_once_with(url)
+
+    def test_check_token_fails(self, mocker):
+        mock_response = MockResponse()
+        mock_response.text = '{"error": "error_data"}'
+        mocker.patch('requests.get', return_value=mock_response)
+
+        self.auth.token = self.token
+        check = self.auth.check_token()
+
+        assert not check
+        assert isinstance(check, bool)
+
+        url = self.auth._url_check_token.format(self.token)
+        requests.get.assert_called_once_with(url)
+
+    def test_check_token_error(self, mocker):
+        mock_response = MockResponse()
+        mock_response.text = '{"garbage_data": "data"}'
+        mocker.patch('requests.get', return_value=mock_response)
+
+        self.auth.token = self.token
+        with pytest.raises(DeezerAuthError):
+            self.auth.check_token()
+
+        url = self.auth._url_check_token.format(self.token)
+        requests.get.assert_called_once_with(url)
