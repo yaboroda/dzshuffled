@@ -39,3 +39,17 @@ class TestDeezerTool(object):
 
         assert user == user_data
         DeezerAuth.user.assert_called_once()
+
+    def test_check_and_update_token(self, mocker):
+        mocker.patch.object(DeezerAuth, 'check_token',
+                            side_effect=[True, False])
+        mocker.patch.object(DeezerTool, '_update_token')
+
+        self.tool.check_and_update_token()
+        DeezerAuth.check_token.assert_called_once()
+        DeezerTool._update_token.assert_not_called()
+
+        DeezerAuth.check_token.reset_mock()
+        self.tool.check_and_update_token()
+        DeezerAuth.check_token.assert_called_once()
+        DeezerTool._update_token.assert_called_once()
