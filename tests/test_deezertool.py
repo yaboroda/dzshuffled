@@ -132,3 +132,36 @@ class TestDeezerTool(object):
         DeezerApi.get_request.assert_called_once_with(
             '/playlist/11/tracks', 'list'
         )
+
+    def test_create_playlist(self, mocker):
+        user_id = 11
+        new_playlist_id = 77
+        playlist_title = 'some_title'
+        mocker.patch.object(
+            DeezerApi, 'post_request',
+            return_value={"id": new_playlist_id}
+        )
+        mocker.patch.object(
+            DeezerTool, 'user', new_callable=mocker.PropertyMock,
+            return_value={"id": user_id}
+        )
+        data = self.tool.create_playlist(playlist_title)
+
+        assert data == new_playlist_id
+        DeezerApi.post_request.assert_called_once_with(
+            '/user/11/playlists',
+            'single',
+            {"title": playlist_title}
+        )
+
+    def test_remove_playlist(self, mocker):
+        playlist_id = 77
+        mocker.patch.object(DeezerApi, 'delete_request', return_value=True)
+
+        result = self.tool.remove_playlist(playlist_id)
+
+        assert result
+        assert isinstance(result, bool)
+        DeezerApi.delete_request.assert_called_once_with(
+            '/playlist/77', 'single'
+        )
