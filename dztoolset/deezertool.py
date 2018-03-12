@@ -1,5 +1,4 @@
 from typing import List, Union
-from functools import lru_cache
 
 from dztoolset.deezerauth import DeezerAuth
 from dztoolset.deezerapi import DeezerApi
