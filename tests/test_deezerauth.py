@@ -197,3 +197,21 @@ class TestDeezerAuth(object):
 
         url = self.auth._url_check_token.format(self.token)
         requests.get.assert_called_once_with(url)
+
+    def test_user_prop(self, mocker):
+        mock_response = MockResponse()
+        mock_response.text = '{"type": "user", "data": "value"}'
+        mock_response_data = {"type": "user", "data": "value"}
+        mocker.patch('requests.get', return_value=mock_response)
+
+        self.auth.token = self.token
+
+        # call user prop twice, but check that there will be only one request
+        user = self.auth.user
+        user2 = self.auth.user
+
+        assert user == mock_response_data
+        assert user2 == mock_response_data
+
+        url = self.auth._url_check_token.format(self.token)
+        requests.get.assert_called_once_with(url)
