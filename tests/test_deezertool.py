@@ -118,5 +118,17 @@ class TestDeezerTool(object):
         data = self.tool.get_my_playlists(forced=True)
 
         assert data == playlist_data_2
-        DeezerApi.get_request.assert_called_once_with('/user/me/playlists',
-                                                      'list')
+        DeezerApi.get_request.assert_called_once_with(
+            '/user/me/playlists', 'list'
+        )
+
+    def test_get_tracks_from_playlist(self, mocker):
+        tracks_data = {"data": "value"}
+        mocker.patch.object(DeezerApi, 'get_request', return_value=tracks_data)
+
+        data = self.tool.get_tracks_from_playlist(11)
+
+        assert data == tracks_data
+        DeezerApi.get_request.assert_called_once_with(
+            '/playlist/11/tracks', 'list'
+        )
