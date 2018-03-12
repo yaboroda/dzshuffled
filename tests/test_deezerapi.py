@@ -1,7 +1,6 @@
 import requests
 import pytest
 import pytest_mock
-from unittest.mock import call
 from dztoolset.deezerapi import (DeezerApi, DeezerApiError,
                                  DeezerApiRequestError)
 
@@ -65,11 +64,11 @@ class TestDeezerApi(object):
         data = self.api.get_request(self.test_uri, 'list', self.test_params)
 
         requests.get.assert_has_calls([
-            call(
+            mocker.call(
                 self.base_url+self.test_uri,
                 self.test_params_after_add_required
             ),
-            call(
+            mocker.call(
                 'next_url'
             )
         ])
@@ -147,15 +146,15 @@ class TestDeezerApi(object):
             self.api.get_request(self.test_uri, 'list', self.test_params)
 
         requests.get.assert_has_calls([
-            call(
+            mocker.call(
                 self.base_url+self.test_uri,
                 self.test_params_after_add_required
             ),
-            call(
+            mocker.call(
                 self.base_url+self.test_uri,
                 self.test_params_after_add_required
             ),
-            call(
+            mocker.call(
                 self.base_url+self.test_uri,
                 self.test_params_after_add_required
             )

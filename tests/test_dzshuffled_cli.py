@@ -1,7 +1,7 @@
 import os
-from unittest.mock import call, patch
 from argparse import ArgumentParser
 from subprocess import Popen
+from unittest.mock import patch
 import pytest
 import pytest_mock
 import dztoolset.dzshuffled_cli as dz_cli
@@ -70,8 +70,8 @@ class TestDzshuffledCli(object):
             dz_cli.main(['-l'], self.config_path)
 
         Printer.print.assert_has_calls([
-            call(self.scenario_short_info[0]),
-            call(self.scenario_short_info[1]),
+            mocker.call(self.scenario_short_info[0]),
+            mocker.call(self.scenario_short_info[1]),
         ])
 
     def test_show_list_of_scenarios_verbous(self, mocker):
@@ -83,13 +83,13 @@ class TestDzshuffledCli(object):
             dz_cli.main(['-lv'], self.config_path)
 
         Printer.print.assert_has_calls([
-            call(self.scenario_short_info[0]),
-            call(self.scenario_short_info[1]),
+            mocker.call(self.scenario_short_info[0]),
+            mocker.call(self.scenario_short_info[1]),
         ])
 
         Printer.pprint.assert_has_calls([
-            call(self.default_config_data['pl_test1']),
-            call(self.default_config_data['pl_test2']),
+            mocker.call(self.default_config_data['pl_test1']),
+            mocker.call(self.default_config_data['pl_test2']),
         ])
 
     def test_print_info_about_scenario_by_number(self, mocker):
