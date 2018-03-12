@@ -1,7 +1,7 @@
 import os
 import pytest
 import pytest_mock
-from dztoolset.deezertool import DeezerTool
+from dztoolset.deezertool import DeezerTool, DeezerToolError
 from dztoolset.deezerauth import DeezerAuth
 from dztoolset.deezerapi import DeezerApi
 from dztoolset.deezerconfig import DeezerConfig
@@ -13,8 +13,10 @@ class TestDeezerTool(object):
 
     def setup_class(self):
         self.config_path = './tests/testcfg.ini'
+        self.token = 'test_token'
 
     def setup(self):
+        assert not os.path.isfile(self.config_path)
         with pytest.raises(SystemExit):
             DeezerConfig(self.config_path)
         self.config = DeezerConfig(self.config_path)
@@ -53,3 +55,34 @@ class TestDeezerTool(object):
         self.tool.check_and_update_token()
         DeezerAuth.check_token.assert_called_once()
         DeezerTool._update_token.assert_called_once()
+
+    def test__update_token(self, mocker):
+        assert self.tool.config.get('auth', 'token') == ''
+        assert self.tool.api.token == ''
+
+        mocker.patch.object(DeezerAuth, 'authorize')
+        mocker.patch.object(DeezerAuth, 'check_token', return_value=True)
+        self.tool.auth.token = self.token
+
+        self.tool._update_token()
+
+        DeezerAuth.authorize.assert_called_once()
+        DeezerAuth.check_token.assert_called_once()
+        assert self.tool.config.get('auth', 'token') == self.token
+        assert self.tool.api.token == self.token
+
+    def test__update_token_error(self, mocker):
+        assert self.tool.config.get('auth', 'token') == ''
+        assert self.tool.api.token == ''
+
+        mocker.patch.object(DeezerAuth, 'authorize')
+        mocker.patch.object(DeezerAuth, 'check_token', return_value=False)
+        self.tool.auth.token = self.token
+
+        with pytest.raises(DeezerToolError):
+            self.tool._update_token()
+
+        DeezerAuth.authorize.assert_called_once()
+        DeezerAuth.check_token.assert_called_once()
+        assert self.tool.config.get('auth', 'token') == ''
+        assert self.tool.api.token == ''
