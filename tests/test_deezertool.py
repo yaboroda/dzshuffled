@@ -222,3 +222,30 @@ class TestDeezerTool(object):
                 {"songs": tracks_ids_str_2}
             ),
         ])
+
+    def test_add_tracks_to_playlist(self, mocker):
+        playlist_id = 77
+        track_ids = [3, 7, 14]
+        track_ids_str = '3,7,14'
+        mocker.patch.object(DeezerApi, 'post_request')
+
+        self.tool.add_tracks_to_playlist(track_ids, playlist_id)
+
+        DeezerApi.post_request.assert_called_once_with(
+            f'/playlist/{playlist_id}/tracks',
+            'single',
+            {"songs": track_ids_str}
+        )
+
+    def test_set_playlist_desctiption(self, mocker):
+        playlist_id = 77,
+        description = 'Some text',
+        mocker.patch.object(DeezerApi, 'post_request')
+
+        self.tool.set_playlist_desctiption(playlist_id, description)
+
+        DeezerApi.post_request.assert_called_once_with(
+            f'/playlist/{playlist_id}',
+            'single',
+            {"description": description}
+        )
