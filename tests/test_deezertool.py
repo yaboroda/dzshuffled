@@ -86,3 +86,37 @@ class TestDeezerTool(object):
         DeezerAuth.check_token.assert_called_once()
         assert self.tool.config.get('auth', 'token') == ''
         assert self.tool.api.token == ''
+
+    def test_get_my_playlists_request(self, mocker):
+        playlist_data_1 = {"data": "value1"}
+        mocker.patch.object(DeezerApi, 'get_request',
+                            return_value=playlist_data_1)
+
+        data = self.tool.get_my_playlists()
+
+        assert data == playlist_data_1
+        DeezerApi.get_request.assert_called_once_with('/user/me/playlists',
+                                                      'list')
+
+    def test_get_my_playlists_cached(self, mocker):
+        playlist_data_1 = {"data": "value1"}
+        mocker.patch.object(DeezerApi, 'get_request')
+        self.tool._myplaylists = playlist_data_1
+
+        data = self.tool.get_my_playlists()
+
+        assert data == playlist_data_1
+        DeezerApi.get_request.assert_not_called()
+
+    def test_get_my_playlists_forced(self, mocker):
+        playlist_data_1 = {"data": "value1"}
+        playlist_data_2 = {"data": "value1"}
+        mocker.patch.object(DeezerApi, 'get_request',
+                            return_value=playlist_data_2)
+        self.tool._myplaylists = playlist_data_1
+
+        data = self.tool.get_my_playlists(forced=True)
+
+        assert data == playlist_data_2
+        DeezerApi.get_request.assert_called_once_with('/user/me/playlists',
+                                                      'list')
