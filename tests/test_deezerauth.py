@@ -3,10 +3,7 @@ import requests
 from http.server import HTTPServer
 import pytest_mock
 import pytest
-from dztoolset.deezerauth import (
-    DeezerAuth, DeezerAuthError, _AuthorizationHandler, _AuthorizationServer,
-    _Authorization
-)
+import dztoolset.deezerauth as deezerauth
 
 assert callable(pytest_mock.mocker)
 
@@ -36,7 +33,7 @@ class TestDeezerAuth(object):
         self.test_code = 'testcode'
 
     def setup(self):
-        self.auth = DeezerAuth()
+        self.auth = deezerauth.DeezerAuth()
         self.auth.set_params(self.port, self.secret, self.app_id, self.token)
 
     def teardown(self):
@@ -50,22 +47,22 @@ class TestDeezerAuth(object):
 
     def test_authoruze_missing_secret_error(self):
         self.auth._secret = None
-        with pytest.raises(DeezerAuthError):
+        with pytest.raises(deezerauth.DeezerAuthError):
             self.auth.authorize()
 
     def test_authoruze_missing_appid_error(self):
         self.auth._app_id = None
-        with pytest.raises(DeezerAuthError):
+        with pytest.raises(deezerauth.DeezerAuthError):
             self.auth.authorize()
 
     def test_authorize(self, mocker):
-        mocker.patch.object(DeezerAuth, '_fetch_code')
-        mocker.patch.object(DeezerAuth, '_fetch_token')
+        mocker.patch.object(deezerauth.DeezerAuth, '_fetch_code')
+        mocker.patch.object(deezerauth.DeezerAuth, '_fetch_token')
 
         self.auth.authorize()
 
-        DeezerAuth._fetch_code.assert_called_once()
-        DeezerAuth._fetch_token.assert_called_once()
+        deezerauth.deezerauth.DeezerAuth._fetch_code.assert_called_once()
+        deezerauth.deezerauth.DeezerAuth._fetch_token.assert_called_once()
 
     def test__fetch_code(self, mocker):
         url_redirect = self.auth._url_redirect.format(self.port)
@@ -74,8 +71,10 @@ class TestDeezerAuth(object):
         mocker.patch('webbrowser.open')
         mocker.patch.object(HTTPServer, '__init__', return_value=None)
 
-        mocker.patch.object(_AuthorizationServer, 'handle_request',
-                            side_effect=_Authorization(self.test_code))
+        mocker.patch.object(
+            deezerauth._AuthorizationServer, 'handle_request',
+            side_effect=deezerauth._Authorization(self.test_code)
+        )
 
         self.auth._fetch_code()
 
@@ -89,8 +88,8 @@ class TestDeezerAuth(object):
 
         assert host == 'localhost'
         assert port == self.port
-        assert error_handler == _AuthorizationHandler
-        _AuthorizationServer.handle_request.assert_called_once()
+        assert error_handler == deezerauth._AuthorizationHandler
+        deezerauth._AuthorizationServer.handle_request.assert_called_once()
 
         assert self.auth.code == self.test_code
 
@@ -110,7 +109,7 @@ class TestDeezerAuth(object):
 
     def test__fetch_token_error_no_code(self):
         assert not hasattr(self.auth, 'code')
-        with pytest.raises(DeezerAuthError):
+        with pytest.raises(deezerauth.DeezerAuthError):
             self.auth._fetch_token()
 
     def test__fetch_token_error_fetching(self, mocker):
@@ -120,43 +119,44 @@ class TestDeezerAuth(object):
         mocker.patch('requests.get', return_value=mock_response)
 
         self.auth.code = self.test_code
-        with pytest.raises(DeezerAuthError):
+        with pytest.raises(deezerauth.DeezerAuthError):
             self.auth._fetch_token()
 
     def test__AuthorizationHandler(self, mocker):
-        mocker.patch.object(_AuthorizationHandler, '__init__',
+        mocker.patch.object(deezerauth._AuthorizationHandler, '__init__',
                             return_value=None)
-        mocker.patch.object(_AuthorizationHandler, 'send_response')
-        mocker.patch.object(_AuthorizationHandler, 'send_header')
-        mocker.patch.object(_AuthorizationHandler, 'end_headers')
+        mocker.patch.object(deezerauth._AuthorizationHandler, 'send_response')
+        mocker.patch.object(deezerauth._AuthorizationHandler, 'send_header')
+        mocker.patch.object(deezerauth._AuthorizationHandler, 'end_headers')
 
-        auth_handler = _AuthorizationHandler()
+        auth_handler = deezerauth._AuthorizationHandler()
         auth_handler.path = f'/authfinish?code={self.test_code}'
         mock_wfile = MockWfile()
         auth_handler.wfile = mock_wfile
 
-        with pytest.raises(_Authorization) as auth_exception_info:
+        with pytest.raises(deezerauth._Authorization) as auth_exception_info:
             auth_handler.do_GET()
         assert auth_exception_info.value.code == self.test_code
 
-        _AuthorizationHandler.send_response.assert_called_once()
-        _AuthorizationHandler.send_header.assert_called_once_with(
+        deezerauth._AuthorizationHandler.send_response.assert_called_once()
+        deezerauth._AuthorizationHandler.send_header.assert_called_once_with(
             'Content-Type', 'text/html'
         )
-        _AuthorizationHandler.end_headers.assert_called_once()
+        deezerauth._AuthorizationHandler.end_headers.assert_called_once()
         assert '<script>close()</script>' in str(mock_wfile.write_data)
 
     def test__AuthorizationHandler_error404(self, mocker):
-        mocker.patch.object(_AuthorizationHandler, '__init__',
+        mocker.patch.object(deezerauth._AuthorizationHandler, '__init__',
                             return_value=None)
-        mocker.patch.object(_AuthorizationHandler, 'send_response')
-        mocker.patch.object(_AuthorizationHandler, 'send_error')
+        mocker.patch.object(deezerauth._AuthorizationHandler, 'send_response')
+        mocker.patch.object(deezerauth._AuthorizationHandler, 'send_error')
 
-        auth_handler = _AuthorizationHandler()
+        auth_handler = deezerauth._AuthorizationHandler()
         auth_handler.path = f'/some_path'
 
         auth_handler.do_GET()
-        _AuthorizationHandler.send_error.assert_called_once_with(404)
+        (deezerauth._AuthorizationHandler
+            .send_error.assert_called_once_with(404))
 
     def test_check_token(self, mocker):
         mock_response = MockResponse()
@@ -192,7 +192,7 @@ class TestDeezerAuth(object):
         mocker.patch('requests.get', return_value=mock_response)
 
         self.auth.token = self.token
-        with pytest.raises(DeezerAuthError):
+        with pytest.raises(deezerauth.DeezerAuthError):
             self.auth.check_token()
 
         url = self.auth._url_check_token.format(self.token)
