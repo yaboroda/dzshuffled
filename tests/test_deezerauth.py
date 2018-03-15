@@ -61,8 +61,8 @@ class TestDeezerAuth(object):
 
         self.auth.authorize()
 
-        deezerauth.deezerauth.DeezerAuth._fetch_code.assert_called_once()
-        deezerauth.deezerauth.DeezerAuth._fetch_token.assert_called_once()
+        deezerauth.DeezerAuth._fetch_code.assert_called_once()
+        deezerauth.DeezerAuth._fetch_token.assert_called_once()
 
     def test__fetch_code(self, mocker):
         url_redirect = self.auth._url_redirect.format(self.port)
