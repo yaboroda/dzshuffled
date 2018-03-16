@@ -94,6 +94,9 @@ class DeezerPlaylist(object):
         Returns list of missing titles or raise exception.
         If all titles presence return empty list.
         """
+        if isinstance(target_titles, str):
+            target_titles = [target_titles]
+
         all_titles = [pl['title'] for pl in self._dztool.get_my_playlists()]
 
         missing_titles = [title for title in target_titles

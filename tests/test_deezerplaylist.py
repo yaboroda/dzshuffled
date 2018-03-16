@@ -2,7 +2,7 @@ import pytest
 import os
 from typing import List
 import pytest_mock
-from dztoolset.deezerplaylist import DeezerPlaylist
+from dztoolset.deezerplaylist import DeezerPlaylist, DeezerPlaylistError
 from dztoolset.deezerconfig import DeezerConfig
 from dztoolset.deezertool import DeezerTool
 from dztoolset.printer import Printer
@@ -87,3 +87,81 @@ class TestDeezerPlaylist(object):
         DeezerTool.get_my_playlists.assert_called_once()
         assert isinstance(data, List)
         assert len(data) == 0
+
+    def test_check_for_absence_of_playlists_list(self, mocker):
+        mocker.patch.object(DeezerTool, 'get_my_playlists',
+                            return_value=self.test_playlists_set)
+
+        non_existent_title_1 = 'non_existent_title_1'
+        non_existent_title_2 = 'non_existent_title_2'
+
+        titles = [
+            self.test_playlists_set[1]['title'],
+            non_existent_title_1,
+            non_existent_title_2,
+            self.test_playlists_set[2]['title'],
+        ]
+
+        missing_titles = self.pl.check_for_absence_of_playlists(titles)
+
+        DeezerTool.get_my_playlists.assert_called_once()
+        assert isinstance(missing_titles, List)
+        assert len(missing_titles) == 2
+        assert non_existent_title_1 in missing_titles
+        assert non_existent_title_2 in missing_titles
+
+    def test_check_for_absence_of_playlists_str(self, mocker):
+        mocker.patch.object(DeezerTool, 'get_my_playlists',
+                            return_value=self.test_playlists_set)
+
+        non_existent_title = 'non_existent_title'
+
+        missing_titles = self.pl.check_for_absence_of_playlists(
+            non_existent_title
+        )
+
+        DeezerTool.get_my_playlists.assert_called_once()
+        assert isinstance(missing_titles, List)
+        assert len(missing_titles) == 1
+        assert missing_titles == [non_existent_title]
+
+    def test_check_for_absence_of_playlists_no_match(self, mocker):
+        mocker.patch.object(DeezerTool, 'get_my_playlists',
+                            return_value=self.test_playlists_set)
+
+        titles = [
+            self.test_playlists_set[1]['title'],
+            self.test_playlists_set[2]['title'],
+        ]
+
+        missing_titles = self.pl.check_for_absence_of_playlists(titles)
+
+        DeezerTool.get_my_playlists.assert_called_once()
+        assert isinstance(missing_titles, List)
+        assert len(missing_titles) == 0
+
+    def test_check_for_absence_of_playlists_exception(self, mocker):
+        mocker.patch.object(DeezerTool, 'get_my_playlists',
+                            return_value=self.test_playlists_set)
+
+        non_existent_title_1 = 'non_existent_title_1'
+        non_existent_title_2 = 'non_existent_title_2'
+
+        titles = [
+            self.test_playlists_set[1]['title'],
+            non_existent_title_1,
+            non_existent_title_2,
+            self.test_playlists_set[2]['title'],
+        ]
+
+        with pytest.raises(DeezerPlaylistError) as error_info:
+            self.pl.check_for_absence_of_playlists(
+                titles, raise_exception=True
+            )
+
+        DeezerTool.get_my_playlists.assert_called_once()
+        error_message = error_info.value.args[0]
+        assert non_existent_title_1 in error_message
+        assert non_existent_title_2 in error_message
+        assert self.test_playlists_set[1]['title'] not in error_message
+        assert self.test_playlists_set[2]['title'] not in error_message
