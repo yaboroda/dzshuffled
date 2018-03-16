@@ -21,6 +21,8 @@ class TestDeezerPlaylist(object):
             {"id": "3", "title": "playlist_3"},
             {"id": "4", "title": "playlist_4"},
             {"id": "5", "title": "playlist_5"},
+            {"id": "6", "title": "playlist_double"},
+            {"id": "7", "title": "playlist_double"},
         ]
 
     def setup(self):
@@ -165,3 +167,57 @@ class TestDeezerPlaylist(object):
         assert non_existent_title_2 in error_message
         assert self.test_playlists_set[1]['title'] not in error_message
         assert self.test_playlists_set[2]['title'] not in error_message
+
+    def test_reset_playlist_by_title_single_match(self, mocker):
+        """When there is single playlist with such title"""
+        mocker.patch.object(DeezerTool, 'get_my_playlists',
+                            return_value=self.test_playlists_set)
+        mocker.patch.object(DeezerTool, 'remove_playlist')
+        mocker.patch.object(DeezerTool, 'purge_playlist')
+        mocker.patch.object(DeezerTool, 'create_playlist')
+
+        self.pl.reset_playlist_by_title(self.test_playlists_set[2]['title'])
+
+        DeezerTool.get_my_playlists.assert_called_once()
+        DeezerTool.purge_playlist.assert_called_once_with(
+            self.test_playlists_set[2]["id"]
+        )
+        DeezerTool.remove_playlist.assert_not_called()
+        DeezerTool.create_playlist.assert_not_called()
+
+    def test_reset_playlist_by_title_no_match(self, mocker):
+        """When there is no playlist with such title"""
+        mocker.patch.object(DeezerTool, 'get_my_playlists',
+                            return_value=self.test_playlists_set)
+        mocker.patch.object(DeezerTool, 'remove_playlist')
+        mocker.patch.object(DeezerTool, 'purge_playlist')
+        mocker.patch.object(DeezerTool, 'create_playlist')
+
+        non_existent_title = 'non_existent_title'
+
+        self.pl.reset_playlist_by_title(non_existent_title)
+
+        DeezerTool.get_my_playlists.assert_called_once()
+        DeezerTool.purge_playlist.assert_not_called()
+        DeezerTool.remove_playlist.assert_not_called()
+        DeezerTool.create_playlist.assert_called_once_with(non_existent_title)
+
+    def test_reset_playlist_by_title_multiple_matches(self, mocker):
+        """When there is several playlists with such title"""
+        mocker.patch.object(DeezerTool, 'get_my_playlists',
+                            return_value=self.test_playlists_set)
+        mocker.patch.object(DeezerTool, 'remove_playlist')
+        mocker.patch.object(DeezerTool, 'purge_playlist')
+        mocker.patch.object(DeezerTool, 'create_playlist')
+
+        self.pl.reset_playlist_by_title(self.test_playlists_set[6]['title'])
+
+        DeezerTool.get_my_playlists.assert_called_once()
+        DeezerTool.purge_playlist.assert_not_called()
+        DeezerTool.remove_playlist.assert_has_calls([
+            mocker.call(self.test_playlists_set[6]["id"]),
+            mocker.call(self.test_playlists_set[7]["id"]),
+        ])
+        DeezerTool.create_playlist.assert_called_once_with(
+            self.test_playlists_set[6]['title']
+        )
