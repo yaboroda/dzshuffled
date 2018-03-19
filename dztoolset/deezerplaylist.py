@@ -1,4 +1,4 @@
-from typing import Dict, List, Union
+from typing import List, Union
 from random import shuffle
 from datetime import datetime
 
@@ -138,21 +138,6 @@ class DeezerPlaylist(object):
             target_playlist_id = self._dztool.create_playlist(title)
 
         return target_playlist_id
-
-    def _rid_of_duplicates(self, list_of_dicts: List[Dict],
-                           field: str):
-        """Remove duplicates from list_of_dicts,
-        comparig them by field argument.
-        """
-        new_list = []
-        unique_vals = []
-
-        for el in list_of_dicts:
-            if el[field] not in unique_vals:
-                unique_vals.append(el[field])
-                new_list.append(el)
-
-        return new_list
 
 
 class DeezerPlaylistError(Exception):

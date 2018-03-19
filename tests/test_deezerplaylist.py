@@ -221,3 +221,124 @@ class TestDeezerPlaylist(object):
         DeezerTool.create_playlist.assert_called_once_with(
             self.test_playlists_set[6]['title']
         )
+
+    def test_make_shuffled_playlist(self, mocker):
+        target_playlist_title = 'title'
+        target_playlist_id = 11
+        src_playlists = [
+            self.test_playlists_set[1],
+            self.test_playlists_set[3],
+        ]
+        src_playlists_titles = [
+            pl["title"] for pl in src_playlists
+        ]
+        src_tracks_1 = [
+            {"id": "1"},
+            {"id": "2"},
+            {"id": "3"},
+        ]
+        src_tracks_2 = [
+            {"id": "4"},
+            {"id": "3"},
+            {"id": "5"},
+        ]
+        # getting list of unique ids from both lists
+        src_tracks_ids = list(set([
+            t["id"] for t in (src_tracks_1 + src_tracks_2)
+        ]))
+        mocker.patch.object(DeezerPlaylist, 'reset_playlist_by_title',
+                            return_value=target_playlist_id)
+        mocker.patch.object(DeezerTool, 'set_playlist_desctiption')
+        mocker.patch.object(DeezerPlaylist, 'check_for_absence_of_playlists')
+        mocker.patch.object(DeezerPlaylist, 'get_playlists_by_titles',
+                            return_value=src_playlists)
+        mocker.patch.object(DeezerTool, 'get_tracks_from_playlist',
+                            side_effect=[src_tracks_1, src_tracks_2])
+        mocker.patch.object(DeezerTool, 'add_tracks_to_playlist')
+
+        self.pl.make_shuffled_playlist(
+            target_playlist_title,
+            src_playlists_titles,
+            100
+        )
+
+        (DeezerPlaylist.reset_playlist_by_title
+            .assert_called_once_with(target_playlist_title))
+        DeezerTool.set_playlist_desctiption.assert_called_once()
+        (DeezerPlaylist.check_for_absence_of_playlists
+            .assert_called_once_with(src_playlists_titles, True))
+        (DeezerPlaylist.get_playlists_by_titles
+            .assert_called_once_with(src_playlists_titles))
+        DeezerTool.get_tracks_from_playlist.assert_has_calls([
+            mocker.call(pl["id"]) for pl in src_playlists
+        ])
+
+        # due to shuffled order of ids, get list of ids from mock call args,
+        # and assert its length and each of src_tracks_ids
+        DeezerTool.add_tracks_to_playlist.assert_called_once()
+        (name, args, kwargs) = DeezerTool.add_tracks_to_playlist.mock_calls[0]
+        (ids, pl_id_) = args
+        assert len(ids) == len(src_tracks_ids)
+        for id in src_tracks_ids:
+            assert id in ids
+
+    def test_make_shuffled_playlist_with_limit(self, mocker):
+        limit = 3
+        target_playlist_title = 'title'
+        target_playlist_id = 11
+        src_playlists = [
+            self.test_playlists_set[1],
+            self.test_playlists_set[3],
+        ]
+        src_playlists_titles = [
+            pl["title"] for pl in src_playlists
+        ]
+        src_tracks_1 = [
+            {"id": "1"},
+            {"id": "2"},
+            {"id": "3"},
+        ]
+        src_tracks_2 = [
+            {"id": "4"},
+            {"id": "3"},
+            {"id": "5"},
+        ]
+        # getting list of unique ids from both lists
+        src_tracks_ids = list(set([
+            t["id"] for t in (src_tracks_1 + src_tracks_2)
+        ]))
+        mocker.patch.object(DeezerPlaylist, 'reset_playlist_by_title',
+                            return_value=target_playlist_id)
+        mocker.patch.object(DeezerTool, 'set_playlist_desctiption')
+        mocker.patch.object(DeezerPlaylist, 'check_for_absence_of_playlists')
+        mocker.patch.object(DeezerPlaylist, 'get_playlists_by_titles',
+                            return_value=src_playlists)
+        mocker.patch.object(DeezerTool, 'get_tracks_from_playlist',
+                            side_effect=[src_tracks_1, src_tracks_2])
+        mocker.patch.object(DeezerTool, 'add_tracks_to_playlist')
+
+        self.pl.make_shuffled_playlist(
+            target_playlist_title,
+            src_playlists_titles,
+            limit
+        )
+
+        (DeezerPlaylist.reset_playlist_by_title
+            .assert_called_once_with(target_playlist_title))
+        DeezerTool.set_playlist_desctiption.assert_called_once()
+        (DeezerPlaylist.check_for_absence_of_playlists
+            .assert_called_once_with(src_playlists_titles, True))
+        (DeezerPlaylist.get_playlists_by_titles
+            .assert_called_once_with(src_playlists_titles))
+        DeezerTool.get_tracks_from_playlist.assert_has_calls([
+            mocker.call(pl["id"]) for pl in src_playlists
+        ])
+
+        # due to shuffled order of ids, get list of ids from mock call args,
+        # and assert its length and each of src_tracks_ids
+        DeezerTool.add_tracks_to_playlist.assert_called_once()
+        (name, args, kwargs) = DeezerTool.add_tracks_to_playlist.mock_calls[0]
+        (ids, pl_id_) = args
+        assert len(ids) == limit
+        for id in ids:
+            assert id in src_tracks_ids
