@@ -1,6 +1,7 @@
 import pytest
 import os
 from typing import List
+import itertools
 import pytest_mock
 from dztoolset.deezerplaylist import DeezerPlaylist, DeezerPlaylistError
 from dztoolset.deezerconfig import DeezerConfig
@@ -168,13 +169,18 @@ class TestDeezerPlaylist(object):
         assert self.test_playlists_set[1]['title'] not in error_message
         assert self.test_playlists_set[2]['title'] not in error_message
 
-    def test_reset_playlist_by_title_single_match(self, mocker):
-        """When there is single playlist with such title"""
+    @pytest.fixture
+    def fx_reset(self, mocker):
         mocker.patch.object(DeezerTool, 'get_my_playlists',
                             return_value=self.test_playlists_set)
         mocker.patch.object(DeezerTool, 'remove_playlist')
         mocker.patch.object(DeezerTool, 'purge_playlist')
         mocker.patch.object(DeezerTool, 'create_playlist')
+        return True
+
+    def test_reset_playlist_by_title_single_match(self, fx_reset):
+        """When there is single playlist with such title"""
+        assert fx_reset
 
         self.pl.reset_playlist_by_title(self.test_playlists_set[2]['title'])
 
@@ -185,13 +191,9 @@ class TestDeezerPlaylist(object):
         DeezerTool.remove_playlist.assert_not_called()
         DeezerTool.create_playlist.assert_not_called()
 
-    def test_reset_playlist_by_title_no_match(self, mocker):
+    def test_reset_playlist_by_title_no_match(self, fx_reset):
         """When there is no playlist with such title"""
-        mocker.patch.object(DeezerTool, 'get_my_playlists',
-                            return_value=self.test_playlists_set)
-        mocker.patch.object(DeezerTool, 'remove_playlist')
-        mocker.patch.object(DeezerTool, 'purge_playlist')
-        mocker.patch.object(DeezerTool, 'create_playlist')
+        assert fx_reset
 
         non_existent_title = 'non_existent_title'
 
@@ -202,13 +204,9 @@ class TestDeezerPlaylist(object):
         DeezerTool.remove_playlist.assert_not_called()
         DeezerTool.create_playlist.assert_called_once_with(non_existent_title)
 
-    def test_reset_playlist_by_title_multiple_matches(self, mocker):
+    def test_reset_playlist_by_title_multiple_matches(self, mocker, fx_reset):
         """When there is several playlists with such title"""
-        mocker.patch.object(DeezerTool, 'get_my_playlists',
-                            return_value=self.test_playlists_set)
-        mocker.patch.object(DeezerTool, 'remove_playlist')
-        mocker.patch.object(DeezerTool, 'purge_playlist')
-        mocker.patch.object(DeezerTool, 'create_playlist')
+        assert fx_reset
 
         self.pl.reset_playlist_by_title(self.test_playlists_set[6]['title'])
 
@@ -222,30 +220,27 @@ class TestDeezerPlaylist(object):
             self.test_playlists_set[6]['title']
         )
 
-    def test_make_shuffled_playlist(self, mocker):
+    @pytest.fixture
+    def fx_shuffled(self, mocker):
         target_playlist_title = 'title'
         target_playlist_id = 11
         src_playlists = [
             self.test_playlists_set[1],
             self.test_playlists_set[3],
         ]
-        src_playlists_titles = [
-            pl["title"] for pl in src_playlists
-        ]
-        src_tracks_1 = [
+
+        src_tracks_0 = [
             {"id": "1"},
             {"id": "2"},
             {"id": "3"},
         ]
-        src_tracks_2 = [
+        src_tracks_1 = [
             {"id": "4"},
             {"id": "3"},
             {"id": "5"},
         ]
-        # getting list of unique ids from both lists
-        src_tracks_ids = list(set([
-            t["id"] for t in (src_tracks_1 + src_tracks_2)
-        ]))
+        src_track_packs = [src_tracks_0, src_tracks_1]
+
         mocker.patch.object(DeezerPlaylist, 'reset_playlist_by_title',
                             return_value=target_playlist_id)
         mocker.patch.object(DeezerTool, 'set_playlist_desctiption')
@@ -253,8 +248,24 @@ class TestDeezerPlaylist(object):
         mocker.patch.object(DeezerPlaylist, 'get_playlists_by_titles',
                             return_value=src_playlists)
         mocker.patch.object(DeezerTool, 'get_tracks_from_playlist',
-                            side_effect=[src_tracks_1, src_tracks_2])
+                            side_effect=src_track_packs)
         mocker.patch.object(DeezerTool, 'add_tracks_to_playlist')
+
+        return (target_playlist_title, target_playlist_id,
+                src_playlists, src_track_packs)
+
+    def test_make_shuffled_playlist(self, mocker, fx_shuffled):
+        (target_playlist_title, target_playlist_id,
+            src_playlists, src_track_packs) = fx_shuffled
+
+        src_playlists_titles = [
+            pl["title"] for pl in src_playlists
+        ]
+
+        # get list of unique ids from srs playlists
+        src_tracks_ids = list(set([
+            t["id"] for t in (itertools.chain.from_iterable(src_track_packs))
+        ]))
 
         self.pl.make_shuffled_playlist(
             target_playlist_title,
@@ -282,57 +293,26 @@ class TestDeezerPlaylist(object):
         for id in src_tracks_ids:
             assert id in ids
 
-    def test_make_shuffled_playlist_with_limit(self, mocker):
+    def test_make_shuffled_playlist_limit(self, fx_shuffled):
         limit = 3
-        target_playlist_title = 'title'
-        target_playlist_id = 11
-        src_playlists = [
-            self.test_playlists_set[1],
-            self.test_playlists_set[3],
-        ]
+
+        (target_playlist_title, target_playlist_id,
+            src_playlists, src_track_packs) = fx_shuffled
+
         src_playlists_titles = [
             pl["title"] for pl in src_playlists
         ]
-        src_tracks_1 = [
-            {"id": "1"},
-            {"id": "2"},
-            {"id": "3"},
-        ]
-        src_tracks_2 = [
-            {"id": "4"},
-            {"id": "3"},
-            {"id": "5"},
-        ]
-        # getting list of unique ids from both lists
+
+        # get list of unique ids from srs playlists
         src_tracks_ids = list(set([
-            t["id"] for t in (src_tracks_1 + src_tracks_2)
+            t["id"] for t in (itertools.chain.from_iterable(src_track_packs))
         ]))
-        mocker.patch.object(DeezerPlaylist, 'reset_playlist_by_title',
-                            return_value=target_playlist_id)
-        mocker.patch.object(DeezerTool, 'set_playlist_desctiption')
-        mocker.patch.object(DeezerPlaylist, 'check_for_absence_of_playlists')
-        mocker.patch.object(DeezerPlaylist, 'get_playlists_by_titles',
-                            return_value=src_playlists)
-        mocker.patch.object(DeezerTool, 'get_tracks_from_playlist',
-                            side_effect=[src_tracks_1, src_tracks_2])
-        mocker.patch.object(DeezerTool, 'add_tracks_to_playlist')
 
         self.pl.make_shuffled_playlist(
             target_playlist_title,
             src_playlists_titles,
             limit
         )
-
-        (DeezerPlaylist.reset_playlist_by_title
-            .assert_called_once_with(target_playlist_title))
-        DeezerTool.set_playlist_desctiption.assert_called_once()
-        (DeezerPlaylist.check_for_absence_of_playlists
-            .assert_called_once_with(src_playlists_titles, True))
-        (DeezerPlaylist.get_playlists_by_titles
-            .assert_called_once_with(src_playlists_titles))
-        DeezerTool.get_tracks_from_playlist.assert_has_calls([
-            mocker.call(pl["id"]) for pl in src_playlists
-        ])
 
         # due to shuffled order of ids, get list of ids from mock call args,
         # and assert its length and each of src_tracks_ids
