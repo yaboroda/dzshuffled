@@ -19,8 +19,7 @@ class DeezerConfig(Config):
             'pl_example': {
                 'title': 'Example shuffled playlist',
                 'type': 'shuffled',
-                'source':
-                'playlist 1, playlist 2',
+                'source': 'playlist 1, playlist 2',
                 'limit': 1000
             }
         }
