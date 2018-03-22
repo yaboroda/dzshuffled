@@ -9,8 +9,8 @@ class DeezerScenario(object):
     def __init__(self, config):
         self.config = config
         self._dzplaylist = DeezerPlaylist(config)
-        self._scenario_types = {
-            'shuffled': self._exec_shuffled_scenario
+        self._scenario_handlers = {
+            'shuffled': '_shuffled_scenario_handler'
         }
 
     def check_and_update_token(self):
@@ -19,15 +19,17 @@ class DeezerScenario(object):
     def exec_scenario(self, scenario: str):
         """Execute scenrio from config by its name."""
         self._check_scenario_name_valid(scenario, True)
+        scenario_cfg = self.config.get(scenario)
 
-        scenario_config = self.config.get(scenario)
+        try:
+            handlerName = self._scenario_handlers[scenario_cfg['type']]
+        except KeyError:
+            raise DeezerScenarioError(
+                '"{0}" is not valid scenario type'
+                .format(scenario_cfg['type'])
+            )
 
-        self._scenario_types[scenario_config['type']](scenario_config)
-
-        # if 'type' not in scenario_config or not scenario_config['type'] \
-        #         or scenario_config['type'] not in self._valid_scenario_types:
-        #     raise DeezerScenarioError('Scenario config section must'
-        #                               ' contain valid type option')
+        getattr(self, handlerName)(scenario_cfg)
 
     def get_list_of_scenarios(self):
         """Get list of scenarios names from config, return List of str"""
@@ -61,7 +63,7 @@ class DeezerScenario(object):
         if self._check_scenario_name_valid(scenario, True):
             return self.config.get(scenario)
 
-    def _exec_shuffled_scenario(self, scenario_config: Dict):
+    def _shuffled_scenario_handler(self, scenario_config: Dict):
         if 'title' not in scenario_config or not scenario_config['title']:
             raise DeezerScenarioError('Scenario config section must'
                                       ' contain title option')
