@@ -7,6 +7,7 @@ import pytest_mock
 import dztoolset.dzshuffled_cli as dz_cli
 from dztoolset.printer import Printer
 from dztoolset.deezerconfig import DeezerConfig
+from dztoolset.deezerscenario import DeezerScenario
 
 assert callable(pytest_mock.mocker)
 
@@ -155,3 +156,24 @@ class TestDzshuffledCli(object):
         ])
 
         Popen.wait.assert_called_once()
+
+    def test_print_version(self, mocker):
+        mocker.patch.object(Printer, 'print')
+        with pytest.raises(SystemExit):
+            dz_cli.main(['--version'], self.config_path)
+
+        Printer.print.assert_called_once()
+        args, kwargs = Printer.print.call_args
+        assert len(args) == 1
+        assert 'version' in args[0]
+
+    def test_exec_scenario(self, mocker):
+        scenario_name = 'pl_test1'
+        mocker.patch.object(DeezerScenario, 'check_and_update_token')
+        mocker.patch.object(DeezerScenario, 'exec_scenario')
+
+        with pytest.raises(SystemExit):
+            dz_cli.main([scenario_name], self.config_path)
+
+        DeezerScenario.check_and_update_token.assert_called_once()
+        DeezerScenario.exec_scenario.assert_called_once_with(scenario_name)

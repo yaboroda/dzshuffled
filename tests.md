@@ -13,10 +13,10 @@ dztoolset/deezerconfig.py         5      0   100%
 dztoolset/deezerplaylist.py      64      0   100%
 dztoolset/deezerscenario.py      53      0   100%
 dztoolset/deezertool.py          60      0   100%
-dztoolset/dzshuffled_cli.py      85     11    87%
+dztoolset/dzshuffled_cli.py      85      7    92%
 dztoolset/printer.py             11      2    82%
 -------------------------------------------------
-TOTAL                           475     16    97%
+TOTAL                           475     12    97%
 ```
 
 #### requirements
