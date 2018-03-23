@@ -131,3 +131,64 @@ class TestDezeerScanario(object):
 
         with pytest.raises(DeezerScenarioError):
             self.sc.get_scenario_index_by_name(wrong_name)
+
+    def test_get_scenario_config(self, mocker):
+        sc_name = 'pl_test'
+        sc_config = {'data': 'value'}
+        mocker.patch.object(DeezerScenario, '_check_scenario_name_valid',
+                            return_value=True)
+        mocker.patch.object(DeezerConfig, 'get', return_value=sc_config)
+
+        assert self.sc.get_scenario_config(sc_name) == sc_config
+        DeezerScenario._check_scenario_name_valid.assert_called_once_with(
+            sc_name, True
+        )
+        DeezerConfig.get.assert_called_once_with(sc_name)
+
+    def test__shuffled_scenario_handler(self, mocker):
+        source_list = ['Playlist 1', 'Playlist 2']
+        scenario_config = {
+            'title': 'Test scenario',
+            'source': ', '.join(source_list),
+            'limit': '123'
+        }
+
+        mocker.patch.object(DeezerPlaylist, 'make_shuffled_playlist')
+
+        self.sc._shuffled_scenario_handler(scenario_config)
+
+        DeezerPlaylist.make_shuffled_playlist.assert_called_once_with(
+            scenario_config['title'],
+            source_list,
+            int(scenario_config['limit'])
+        )
+
+    def test__shuffled_scenario_handler_missing_config_keys(self, mocker):
+        source_list = ['Playlist 1', 'Playlist 2']
+        scenario_config_without_title = {
+            'source': ', '.join(source_list),
+            'limit': '123'
+        }
+        scenario_config_without_source = {
+            'title': 'Test scenario',
+            'limit': '123'
+        }
+        scenario_config_without_limit = {
+            'title': 'Test scenario',
+            'source': ', '.join(source_list),
+        }
+        mocker.patch.object(DeezerPlaylist, 'make_shuffled_playlist')
+
+        with pytest.raises(DeezerScenarioError):
+            self.sc._shuffled_scenario_handler(scenario_config_without_title)
+
+        with pytest.raises(DeezerScenarioError):
+            self.sc._shuffled_scenario_handler(scenario_config_without_source)
+
+        self.sc._shuffled_scenario_handler(scenario_config_without_limit)
+
+        DeezerPlaylist.make_shuffled_playlist.assert_called_once_with(
+            scenario_config_without_limit['title'],
+            source_list,
+            None
+        )
