@@ -58,10 +58,10 @@ class DeezerScenario(object):
             raise DeezerScenarioError('There is no scenario "{0}"'
                                       .format(scenario))
 
-    def get_scenario_config(self, scenario: str):
+    def get_scenario_config(self, scenario_name: str):
         """Get scenario config, return Dict."""
-        if self._check_scenario_name_valid(scenario, True):
-            return self.config.get(scenario)
+        if self._check_scenario_name_valid(scenario_name, True):
+            return self.config.get(scenario_name)
 
     def _shuffled_scenario_handler(self, scenario_config: Dict):
         if 'title' not in scenario_config or not scenario_config['title']:
