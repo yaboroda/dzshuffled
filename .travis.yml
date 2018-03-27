@@ -3,4 +3,7 @@ python: "3.6"
 install:
   - pip install pipenv
   - pipenv install --dev
-script: pipenv run python -m pytest tests/
+  - pip install codecov
+script: pipenv run python -m pytest tests/ --cov dztoolset/
+after_success:
+  - codecov
