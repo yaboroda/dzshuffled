@@ -1,3 +1,4 @@
+[![codecov](https://codecov.io/gh/yaboroda/dzshuffled/branch/master/graph/badge.svg)](https://codecov.io/gh/yaboroda/dzshuffled)
 # dzshuffled
 
 This script will create playlist in your Deezer library consisting of shuffled tracks from your other playlists. I write it to overcome track number limit for playlist. I have playlists for work work 1, work 2, work 3. And script select random 1000 tracks from all of them and make with it new playlist.  

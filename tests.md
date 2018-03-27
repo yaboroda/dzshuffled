@@ -2,22 +2,7 @@
 
 
 #### current test coverage state
-```
-Name                          Stmts   Miss  Cover
--------------------------------------------------
-dztoolset/__init__.py             0      0   100%
-dztoolset/config.py              62      0   100%
-dztoolset/deezerapi.py           55      0   100%
-dztoolset/deezerauth.py          80      3    96%
-dztoolset/deezerconfig.py         5      0   100%
-dztoolset/deezerplaylist.py      64      0   100%
-dztoolset/deezerscenario.py      53      0   100%
-dztoolset/deezertool.py          60      0   100%
-dztoolset/dzshuffled_cli.py      85      7    92%
-dztoolset/printer.py             11      2    82%
--------------------------------------------------
-TOTAL                           475     12    97%
-```
+[look here](https://codecov.io/gh/yaboroda/dzshuffled)
 
 #### requirements
  - python3
