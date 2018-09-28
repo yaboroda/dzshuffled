@@ -33,6 +33,7 @@ class DeezerAuth(object):
         self._url_check_token = (
             'http://api.deezer.com/user/me?access_token={0}'
         )
+        self.browser = webbrowser.Chromium('chromium')
 
     @property
     def user(self):
@@ -88,7 +89,7 @@ class DeezerAuth(object):
     def _fetch_code(self):
         """Fetch auth app code, it will be used to get token."""
         redirect = self._url_redirect.format(self._port)
-        webbrowser.open(self._url_auth.format(self._app_id, redirect))
+        self.browser.open(self._url_auth.format(self._app_id, redirect))
         self._start_server()
         try:
             while True:

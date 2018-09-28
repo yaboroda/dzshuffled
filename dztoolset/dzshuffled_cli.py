@@ -199,4 +199,5 @@ def main(custom_args=None, config_path=CONFIG_PATH):
     except DeezerApiRequestError as e:
         handle_exception_output(e)
     except Exception as e:
-        handle_exception_output(e, 'Error: {0}')
+        raise(e)
+        # handle_exception_output(e, 'Error: {0}')
