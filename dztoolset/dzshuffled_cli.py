@@ -15,7 +15,7 @@ from dztoolset.deezerapi import DeezerApiRequestError
 from dztoolset.deezerscenario import DeezerScenario
 from dztoolset.printer import Printer
 
-SCRIPT_VERSION = '1.3.2.1'
+SCRIPT_VERSION = '1.3.2.2'
 DEBUG_MODE = False
 printer = Printer()
 
