@@ -10,7 +10,7 @@ name = "pypi"
 certifi = "*"
 chardet = "*"
 idna = "*"
-requests = "*"
+requests = ">=2.20.0"
 "urllib3" = "*"
 
 
