@@ -19,7 +19,8 @@ class DeezerTool(object):
         self.auth.set_params(self.config.get('system', 'port'),
                              self.config.get('auth', 'secret'),
                              self.config.get('auth', 'app_id'),
-                             self.config.get('auth', 'token'))
+                             self.config.get('auth', 'token'),
+                             self.config.get('system', 'browser'))
         self.api.token = config.get('auth', 'token')
 
     @property

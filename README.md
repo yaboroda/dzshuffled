@@ -58,6 +58,7 @@ playlists in source options should be separated with comma and space
 [system]
 port = 8090
 editor = vim
+browser = chrome
 
 [auth]
 token = 

@@ -33,7 +33,8 @@ class DeezerAuth(object):
         self._url_check_token = (
             'http://api.deezer.com/user/me?access_token={0}'
         )
-        self.browser = webbrowser.Chromium('chromium')
+        self._browser = None
+        self.browser_type = None
 
     @property
     def user(self):
@@ -43,8 +44,17 @@ class DeezerAuth(object):
 
         return self._user
 
+    @property
+    def browser(self):
+        """return instance of browser"""
+        if self._browser is None:
+            self._browser = webbrowser.get(self.browser_type)
+
+        return self._browser
+
     def set_params(self, port: Union[int, str], secret: str,
-                   app_id: Union[int, str], token: str = ''):
+                   app_id: Union[int, str], token: str = '',
+                   browser_type: str = None):
         """Set parameters for authorization.
 
         If you pass in token, it will be used instead of retriving new.
@@ -54,13 +64,15 @@ class DeezerAuth(object):
             port - on this port will be started web server
             secret - secret of your Deezer app
             app_id - id of your Deezer app
-        token -- auth token, if empty or invalid,
-            it will be fetched (default '')
+            token - auth token, if empty or invalid,
+                it will be fetched (default '')
+            browser_type - type of browser used for authorization
         """
         self._port = int(port)
         self._secret = secret
         self._app_id = str(app_id)
         self.token = token
+        self.browser_type = browser_type
 
     def authorize(self):
         """Authorize and get token."""
@@ -70,6 +82,7 @@ class DeezerAuth(object):
                 'and secret. Fill it in config file or write there '
                 'valid token.'
             )
+        print('Authorizing in Deezer using browser')
         self._fetch_code()
         self._fetch_token()
 

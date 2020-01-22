@@ -9,7 +9,8 @@ class DeezerConfig(Config):
         data = {
             'system': {
                 'port': '8090',
-                'editor': 'vim'
+                'editor': 'vim',
+                'browser': 'chrome'
             },
             'auth': {
                 'app_id': '',
